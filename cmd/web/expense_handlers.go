@@ -103,7 +103,7 @@ func (app *application) expenseCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received input.amountInCents: %s", input.AmountInCents)
+	log.Printf("Received input.amountInCents: %d", input.AmountInCents)
 
 	// validate input
 	input.Validate()
@@ -174,7 +174,7 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received input.AmountInCents: %s", input.AmountInCents)
+	log.Printf("Received input.AmountInCents: %d", input.AmountInCents)
 
 	// validate input
 	input.Validate()

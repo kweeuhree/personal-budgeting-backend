@@ -79,7 +79,7 @@ func (app *application) budgetCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received input.Checking: %s, Savings: %s", input.CheckingBalance, input.SavingsBalance)
+	log.Printf("Received input.Checking: %d, Savings: %d", input.CheckingBalance, input.SavingsBalance)
 
 	// validate input
 	input.Validate()
@@ -188,7 +188,6 @@ func (app *application) budgetUpdate(budgetId, userId string, checkingBalance, s
 	}
 
 	log.Printf("Budget updated successfully")
-	return
 }
 
 // delete
