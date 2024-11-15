@@ -13,7 +13,7 @@ import (
 
 // define User type
 type User struct {
-	Uuid           string
+	UserId         string
 	Email          string
 	DisplayName    string
 	HashedPassword []byte
@@ -26,7 +26,7 @@ type UserModel struct {
 }
 
 // add a new record to the users table
-func (m *UserModel) Insert(newId, email, displayName, password string) error {
+func (m *UserModel) Insert(userId, email, displayName, password string) error {
 	fmt.Println("Attempting to insert new user into database...")
 
 	// create a bcrypt hash of the plain-text password
@@ -34,11 +34,11 @@ func (m *UserModel) Insert(newId, email, displayName, password string) error {
 	if err != nil {
 		return err
 	}
-	stmt := `INSERT INTO users (uuid, email, displayName, hashedPassword, createdAt)
+	stmt := `INSERT INTO users (userId, email, displayName, hashedPassword, createdAt)
 VALUES(?, ?, ?, ?, UTC_TIMESTAMP())`
 
 	// insert with Exec()
-	_, err = m.DB.Exec(stmt, newId, email, displayName, string(hashedPassword))
+	_, err = m.DB.Exec(stmt, userId, email, displayName, string(hashedPassword))
 	if err != nil {
 		// If this returns an error, we use the errors.As() function to check
 		// whether the error has the type *mysql.MySQLError. If it does, the
