@@ -31,7 +31,7 @@ func (m *BudgetModel) Insert(budgetId, userId string, checkingBalance, savingsBa
 		budgetId, userId, checkingBalance, savingsBalance, budgetTotal, 
 		budgetRemaining, totalSpent, createdAt, updatedAt
 	) 
-	VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())`
+		VALUES (?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())`
 
 	budgetRemaining := budgetTotal
 	totalSpent := int64(0)
@@ -44,28 +44,21 @@ func (m *BudgetModel) Insert(budgetId, userId string, checkingBalance, savingsBa
 	return budgetId, nil
 }
 
-
-
 // return a specific Budget based on its id
 func (m *BudgetModel) Get(budgetId string) (*Budget, error) {
-	// Write the SQL statement we want to execute.
 	stmt := `SELECT budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, updatedAt, createdAt
 			FROM Budget WHERE budgetId = ?`
 
-	// Use the QueryRow() method on the connection pool to execute our
-	// SQL statement, passing in the untrusted id variable as the value for
-	// the placeholder parameter. This returns a pointer to a sql.Row object
-	// which holds the result from the database.
+	// This returns a pointer to a sql.Row object
+	// which holds the result from the database
 	row := m.DB.QueryRow(stmt, budgetId)
 
-	// Initialize a pointer to a new zeroed Snippet struct.
+	// Initialize a pointer to a new zeroed Budget struct
 	bud := &Budget{}
 
 	// Use row.Scan() to copy the values from each field in sql.Row to the
-	// corresponding field in the Snippet struct. Notice that the arguments
-	// to row.Scan are *pointers* to the place you want to copy the data
-	// into, and the number of arguments must be exactly the same as the number of
-	// columns returned by your statement.
+	// corresponding field in the Snippet struct.
+	// The arguments to row.Scan are *pointers* to the place to copy the data into
 	err := row.Scan(
 		&bud.BudgetId,
 		&bud.UserId,
@@ -79,54 +72,47 @@ func (m *BudgetModel) Get(budgetId string) (*Budget, error) {
 	)
 	if err != nil {
 		// If the query returns no rows, then row.Scan() will return a
-		// sql.ErrNoRows error. We use the errors.Is() function check for
-		// that error specifically, and return our own ErrNoRecord error
-		// instead (we'll create this in a moment).
+		// sql.ErrNoRows error
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
 		} else {
 			return nil, err
 		}
 	}
-	// If everything went OK then return the Budget object.
+	// If everything went OK then return the Budget object
 	return bud, nil
 }
 
-// return the all created Budgets
+// return all created Budgets
 func (m *BudgetModel) All() ([]*Budget, error) {
-	// SQL statement we want to execute
 	stmt := `SELECT * FROM Budget
 			ORDER BY created DESC`
 
 	// Use the Query() method on the connection pool to execute the stmt
-	// this returns a sql.Rows resultset containing the result of our query
+	// this returns a sql.Rows resultset containing the result of query
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
 		return nil, err
 	}
 
 	// We defer rows.Close() to ensure the sql.Rows resultset is always
-	// properly closed before the Latest() method returns
+	// properly closed.
 	// Defer stmt should come *after* you check for an error from the Query()
 	// method. Otherwise, if Query() returns an error, you'll get a panic trying to close a nil resultset
 	defer rows.Close()
 
-	// Initialize an empty slice to hold the budget structs
-	budget := []*Budget{}
+	// Initialize an empty slice to hold the Budget structs
+	budgets := []*Budget{}
 
-	// Use rows.Next to iterate through the rows in the resultset. This
-	// prepares the first (and then each subsequent) row to be acted on by
-	// the rows.Scan() method. If iteration over all the rows completes then the
+	// Use rows.Next to iterate through the rows in the resultset.
+	// If iteration over all the rows completes then the
 	// resultset automatically closes itself and frees-up the underlying
 	// database connection.
 	for rows.Next() {
-		// Create a pointer to a new zeroed budget struct.
+		// Create a pointer to a new zeroed Budget struct.
 		bud := &Budget{}
 		// Use rows.Scan() to copy the values from each field in the row to
-		// the new budget object that we created. Again, the arguments to
-		// row.Scan() must be pointers to the place you want to copy the data into, and
-		// the number of arguments must be exactly the same as the number of
-		// columns returned by your statement.
+		// the new budget object.
 		err = rows.Scan(
 		&bud.BudgetId,
 		&bud.UserId,
@@ -141,8 +127,8 @@ func (m *BudgetModel) All() ([]*Budget, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Append it to the slice of snippets.
-		budget = append(budget, bud)
+		// Append it to the slice of Budgets.
+		budgets = append(budgets, bud)
 	}
 	// When the rows.Next() loop has finished we call rows.Err() to retrieve
 	// any error that was encountered during the iteration. It's important to
@@ -151,13 +137,12 @@ func (m *BudgetModel) All() ([]*Budget, error) {
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	// If everything went OK then return the budget slice.
-	return budget, nil
+	// If everything went OK then return the Budgets slice
+	return budgets, nil
 }
 
-// update
+// update a Budget
 func (m *BudgetModel) Put(budgetId, userId string, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent int64) error {
-	// SQL statement we want to execute
 	stmt := `UPDATE Budget 
 			SET checkingBalance = ?, 
 			savingsBalance = ?, 
@@ -169,7 +154,7 @@ func (m *BudgetModel) Put(budgetId, userId string, checkingBalance, savingsBalan
 			and userId = ?`
 	
 	// Execute the statement with the provided id and body
-	_, err := m.DB.Exec(stmt, budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
+	_, err := m.DB.Exec(stmt, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, budgetId, userId)
 	if err != nil {
 		log.Printf("Error while attempting Budget update for budgetId: %s, userId: %s - %v", budgetId, userId, err)
 		return err
@@ -179,7 +164,7 @@ func (m *BudgetModel) Put(budgetId, userId string, checkingBalance, savingsBalan
 	return nil
 }
 
-// delete
+// delete a Budget
 func (m *BudgetModel) Delete(budgetId, userId string) error {
 	// Execute the statement with the provided id
 	stmt := `DELETE FROM Budget WHERE budgetId = ? and userId = ?`
@@ -207,7 +192,7 @@ func (m *BudgetModel) Delete(budgetId, userId string) error {
 	return nil
 }
 
-
+// Find a budget based on UserId
 func (m *BudgetModel) GetBudgetByUserId(userId string) (*Budget, error) {
 	stmt := `SELECT budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent 
 			FROM Budget WHERE userId = ?`
