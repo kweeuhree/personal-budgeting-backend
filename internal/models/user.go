@@ -65,10 +65,10 @@ func (m *UserModel) Authenticate(email, password string) (string, error) {
 	// Retrieve the id and hashed password associated with the given email.
 
 	// If  no matching email exists we return the ErrInvalidCredentials error.
-	var uuid string
+	var userId string
 	var hashedPassword []byte
-	stmt := "SELECT uuid, hashed_password FROM users WHERE email = ?"
-	err := m.DB.QueryRow(stmt, email).Scan(&uuid, &hashedPassword)
+	stmt := "SELECT userId, hashedPassword FROM users WHERE email = ?"
+	err := m.DB.QueryRow(stmt, email).Scan(&userId, &hashedPassword)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "Invalid credentials", ErrInvalidCredentials
@@ -87,16 +87,16 @@ func (m *UserModel) Authenticate(email, password string) (string, error) {
 		}
 	}
 	// Otherwise, the password is correct. Return the user ID.
-	return uuid, nil
+	return userId, nil
 
 }
 
 // Exists method checks if a user exists with a specific ID.
-func (m *UserModel) Exists(uuid string) (bool, error) {
+func (m *UserModel) Exists(userId string) (bool, error) {
 	var exists bool
-	stmt := "SELECT EXISTS(SELECT true FROM users WHERE uuid = ?)"
+	stmt := "SELECT EXISTS(SELECT true FROM users WHERE userId = ?)"
 
-	err := m.DB.QueryRow(stmt, uuid).Scan(&exists)
+	err := m.DB.QueryRow(stmt, userId).Scan(&exists)
 
 	return exists, err
 }
