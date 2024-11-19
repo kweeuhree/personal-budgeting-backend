@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 // The serverError helper writes an error message and stack trace to the errorLog,
@@ -64,6 +66,12 @@ func encodeJSON(w http.ResponseWriter, status int, data interface{}) error {
 	_, err = w.Write(jsonData)
 	return err
 }
+
+func (app *application) GetIdFromParams(r *http.Request, IdToFetch string) (string) {
+	params := httprouter.ParamsFromContext(r.Context())
+	id := params.ByName(IdToFetch)
+	return id
+} 
 
 // Helper method to set a flash message in the session
 func (app *application) setFlash(ctx context.Context, message string) {

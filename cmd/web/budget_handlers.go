@@ -1,14 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/google/uuid"
-	"github.com/julienschmidt/httprouter" // router
+	"github.com/google/uuid" // router
 	"kweeuhree.personal-budgeting-backend/internal/models"
 	"kweeuhree.personal-budgeting-backend/internal/validator"
 )
@@ -58,9 +56,7 @@ const (
 
 // read
 func (app *application) budgetView(w http.ResponseWriter, r *http.Request) {
-	// Get the value of the "id" named parameter
-	params := httprouter.ParamsFromContext(r.Context())
-	budgetId := params.ByName("budgetId")
+	budgetId := app.GetIdFromParams(r, "budgetId")
 
 	// return a 404 Not Found in case of invalid id or error
 	if budgetId == "" {
@@ -143,22 +139,16 @@ func (app *application) budgetCreate(w http.ResponseWriter, r *http.Request) {
 
 // update
 func (app *application) budgetUpdate(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Attempting update...")
-
-	// Get the value of the "id" named parameter
-	params := httprouter.ParamsFromContext(r.Context())
-	budgetId := params.ByName("budgetId")
-	log.Printf("Current budget id: %s", budgetId)
-
-	if budgetId == "" {
-		app.notFound(w)
-		log.Printf("Exiting due to invalid id")
-		return
-	}
-
 	userId := app.sessionManager.Get(r.Context(), "authenticatedUserID").(string)
 	if userId == "" {
 		app.serverError(w, fmt.Errorf("userId not found in session"))
+		return
+	}
+
+	budgetId := app.GetIdFromParams(r, "budgetId")
+	if budgetId == "" {
+		app.notFound(w)
+		log.Printf("Exiting due to invalid id")
 		return
 	}
 
@@ -241,34 +231,26 @@ func (app *application) updateBudgetInDB(budgetId, userId string, checkingBalanc
 
 // delete
 func (app *application) budgetDelete(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Attempting deletion...")
-
 	userId := app.sessionManager.Get(r.Context(), "authenticatedUserID").(string)
 	if userId == "" {
 		app.serverError(w, fmt.Errorf("userId not found in session"))
 		return
 	}
 
-	// Get the value of the "id" named parameter
-	params := httprouter.ParamsFromContext(r.Context())
-	budgetId := params.ByName("budgetId")
-
+	budgetId := app.GetIdFromParams(r, "budgetId")
 	if budgetId == "" {
-		log.Printf("Exiting due to invalid id")
 		app.notFound(w)
 		return
 	}
 	
-
 	// Delete the budget using the ID
 	err := app.budget.Delete(budgetId, userId)
 	if err != nil {
 		app.serverError(w, err)
 		return
-	} else {
-		json.NewEncoder(w).Encode("Deleted successfully!")
-		return
 	}
+	
+	encodeJSON(w, http.StatusOK, "Deleted successfully!")
 }
 
 func (app *application) handleBalanceUpdate(w http.ResponseWriter, userId, balanceType, updateType string, sumInCents int64) (*models.Budget, error) {

@@ -1,14 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/google/uuid"
-	"github.com/julienschmidt/httprouter" // router
+	"github.com/google/uuid" // router
 	"kweeuhree.personal-budgeting-backend/internal/models"
 	"kweeuhree.personal-budgeting-backend/internal/validator"
 )
@@ -41,9 +39,7 @@ func (app *application) categoriesView(w http.ResponseWriter, r *http.Request) {
 
 // read all expenses of a specific category
 func (app *application) specificCategoryExpensesView(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	id := params.ByName("categoryId")
-
+	id := app.GetIdFromParams(r, "categoryId")
 	if id == "" {
 		app.notFound(w)
 		return
@@ -75,21 +71,17 @@ func (app *application) specificCategoryExpensesView(w http.ResponseWriter, r *h
 
 // create
 func (app *application) categoryCreate(w http.ResponseWriter, r *http.Request) {
-
 	userId := app.sessionManager.Get(r.Context(), "authenticatedUserID").(string)
 	if userId == "" {
 		app.serverError(w, fmt.Errorf("userId not found in session"))
 		return
 	}
 
-	// Decode the JSON body into the input struct
 	var input ExpenseCategoryInput
 	err := decodeJSON(w, r, &input)
 	if err != nil {
 		return
 	}
-
-	log.Printf("Received input.Name: %s", input.Name)
 
 	// validate input
 	input.Validate()
@@ -134,12 +126,7 @@ func (app *application) categoryDelete(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, fmt.Errorf("userId not found in session"))
 		return
 	}
-
-	// Get the value of the "id" named parameter
-	params := httprouter.ParamsFromContext(r.Context())
-	id := params.ByName("expenseCategoryId")
-	log.Printf("Current ExpenseCategory id: %s", id)
-
+	id := app.GetIdFromParams(r, "expenseCategoryId")
 	if id == "" {
 		app.notFound(w)
 		log.Printf("Exiting due to invalid id")
@@ -151,8 +138,7 @@ func (app *application) categoryDelete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.serverError(w, err)
 		return
-	} else {
-		json.NewEncoder(w).Encode("Deleted successfully!")
-		return
-	}
+	} 
+	
+	encodeJSON(w, http.StatusOK, "Deleted successfully!")
 }

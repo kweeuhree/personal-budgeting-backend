@@ -159,7 +159,5 @@ func (m *ExpenseModel) Delete(expenseId, userId string) error {
 	}
 
 	log.Printf("Deleted successfully")
-
-	
 	return nil
 }

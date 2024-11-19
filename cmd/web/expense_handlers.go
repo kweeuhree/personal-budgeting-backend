@@ -7,8 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/google/uuid"
-	"github.com/julienschmidt/httprouter" // router
+	"github.com/google/uuid" // router
 	"kweeuhree.personal-budgeting-backend/internal/models"
 	"kweeuhree.personal-budgeting-backend/internal/validator"
 )
@@ -50,17 +49,16 @@ func (app *application) expensesView(w http.ResponseWriter, r *http.Request) {
 
 // read a specific user expense
 func (app *application) specificExpenseView(w http.ResponseWriter, r *http.Request) {
-	// Get the value of the "id" named parameter
-	params := httprouter.ParamsFromContext(r.Context())
-	id := params.ByName("expenseId")
+	id := app.GetIdFromParams(r, "expenseId")
 
-	// return a 404 Not Found in case of invalid id or error
 	if id == "" {
 		app.notFound(w)
 		return
 	}
 
-	Expense, err := app.expenses.Get(id)
+	
+
+	exp, err := app.expenses.Get(id)
 
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
@@ -71,10 +69,8 @@ func (app *application) specificExpenseView(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	app.sessionManager.Put(r.Context(), "flash", "Expense successfully added!")
-
 	// write the Expense data as a plain-text HTTP response body
-	fmt.Fprintf(w, "%+v", Expense)
+	encodeJSON(w, http.StatusOK, exp)
 }
 
 // create
@@ -136,31 +132,24 @@ func (app *application) expenseCreate(w http.ResponseWriter, r *http.Request) {
 
 // update
 func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Attempting update...")
-
 	userId := app.sessionManager.Get(r.Context(), "authenticatedUserID").(string)
 	if userId == "" {
 		app.serverError(w, fmt.Errorf("userId not found in session"))
 		return
 	}
 
-	// Get the value of the "expenseId" named parameter
-	params := httprouter.ParamsFromContext(r.Context())
-	expenseId := params.ByName("expenseId")
-	log.Printf("Current Expense id: %s", expenseId)
-
+	expenseId := app.GetIdFromParams(r, "expenseId")
 	if expenseId == "" {
 		app.notFound(w)
-		log.Printf("Exiting due to invalid id")
 		return
 	}
+	log.Printf("Current Expense id: %s", expenseId)
 
 	// Decode the JSON body into the input struct
 	var input ExpenseInput
 	err := decodeJSON(w, r, &input)
 	if err != nil {
-		log.Printf("Exiting after decoding attempt...")
-		log.Printf("Error message %s", err)
+		log.Printf("Exiting after decoding attempt: %s", err)
 		return
 	}
 
@@ -219,24 +208,19 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 
 // delete
 func (app *application) expenseDelete(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Attempting deletion...")
-
 	userId := app.sessionManager.Get(r.Context(), "authenticatedUserID").(string)
 	if userId == "" {
 		app.serverError(w, fmt.Errorf("userId not found in session"))
 		return
 	}
 
-	// Get the value of the "id" named parameter
-	params := httprouter.ParamsFromContext(r.Context())
-	expenseId := params.ByName("expenseId")
-	log.Printf("Current Expense id: %s", expenseId)
-
+	expenseId := app.GetIdFromParams(r, "expenseId")
 	if expenseId == "" {
 		app.notFound(w)
 		log.Printf("Exiting due to invalid id")
 		return
 	}
+	log.Printf("Current Expense id: %s", expenseId)
 
 	deletedExpense, err := app.expenses.Get(expenseId)
 	if err != nil {
@@ -248,12 +232,11 @@ func (app *application) expenseDelete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.serverError(w, err)
 		return
-	} else {
-		json.NewEncoder(w).Encode("Deleted successfully!")
-		// add the expense amount back to the budget
-		app.handleExpenseUpdate(w, userId, deletedExpense.ExpenseType, UpdateTypeAdd, deletedExpense.AmountInCents)
-		return
-	}
+	} 
+	
+	// add the expense amount back to the budget
+	app.handleExpenseUpdate(w, userId, deletedExpense.ExpenseType, UpdateTypeAdd, deletedExpense.AmountInCents)
+	encodeJSON(w, http.StatusOK, "Deleted successfully!")
 }
 
 func (app *application) handleExpenseUpdate(w http.ResponseWriter, userId, balanceType, updateType string, sumInCents int64) (*models.Budget, error) {
