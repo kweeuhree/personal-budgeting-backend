@@ -38,11 +38,11 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(w, "Attempting to create a new user...")
 	// declare a zero-valued instance of userInput struct
 	var form UserSignUpInput
-
+	
 	// parse the form data into the struct
 	err := decodeJSON(w, r, &form)
 	if err != nil {
-		return
+		log.Printf("Error decoding JSON: %v. Request Method: %s, Request URL: %s", err, r.Method, r.URL)
 	}
 
 	log.Printf("Received new user details: %s", form)
