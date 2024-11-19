@@ -6,9 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
-	"strconv"
-
-	"kweeuhree.personal-budgeting-backend/internal/validator"
 )
 
 // The serverError helper writes an error message and stack trace to the errorLog,
@@ -47,6 +44,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst interface{}) error {
 	err := json.NewDecoder(r.Body).Decode(dst)
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
+		fmt.Printf("Could not decode JSON, error: %s", err)
 		return err
 	}
 	return nil
@@ -68,37 +66,6 @@ func (app *application) getFlash(ctx context.Context) string {
 	return app.sessionManager.PopString(ctx, "flash")
 }
 
-func (input *ExpenseInput) Validate() {
-	amountInCentsStr := strconv.FormatInt(input.AmountInCents, 10)
-	input.CheckField(validator.NotBlank(amountInCentsStr), "amountInCents", "This field cannot be blank")
-}
-
-func (input *ExpenseCategoryInput) Validate() {
-	input.CheckField(validator.NotBlank(input.Name), "amountInCents", "This field cannot be blank")
-}
-
-func (form *UserSignUpInput) Validate() {
-	form.CheckField(validator.NotBlank(form.DisplayName), "displayName", "This field cannot be blank")
-	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
-	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
-	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
-	form.CheckField(validator.MinChars(form.Password, 8), "password", "This field must be at least 8 characters long")
-}
-
-// checks that email and password are provided
-// and also check the format of the email address as
-// a UX-nicety (in case the user makes a typo).
-func (form *UserLoginInput) Validate() {
-	form.CheckField(validator.NotBlank(form.Email), "email", "This field cannot be blank")
-	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "This field must be a valid email address")
-	form.CheckField(validator.NotBlank(form.Password), "password", "This field cannot be blank")
-}
-
-func (input *BudgetInput) Validate() {
-	checkingBalanceStr := strconv.FormatInt(input.CheckingBalance, 10)
-	input.CheckField(validator.NotBlank(checkingBalanceStr), "checkingBalance", "This field cannot be blank")
-}
-
 // Return true if the current request is from an authenticated user, otherwise return false
 func (app *application) isAuthenticated(r *http.Request) bool {
 	isAuthenticated, ok := r.Context().Value(isAuthenticatedContextKey).(bool)
@@ -109,6 +76,7 @@ func (app *application) isAuthenticated(r *http.Request) bool {
 	}
 	return isAuthenticated
 }
+
 
 
 

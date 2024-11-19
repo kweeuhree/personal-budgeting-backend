@@ -62,12 +62,14 @@ func main() {
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
+	log.Println("Starting database connection...")
 	// create connection pool, pass openDB() the dsn from the command-line flag
 	db, err := openDB(*dsn)
 	if err != nil {
 		errorLog.Fatal(err)
 	}
 
+	log.Println("Database connected successfully")
 	// defer a call to db.Close() so that the connection pool is closed before
 	// the main() function exits
 	defer db.Close()
@@ -101,7 +103,7 @@ func main() {
 		MinVersion:       tls.VersionTLS13,
 		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
 	}
-
+	log.Println("Starting server...")
 	srv := &http.Server{
 		Addr:      *addr,
 		ErrorLog:  errorLog,

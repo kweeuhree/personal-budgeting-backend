@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	// environment variables
 	"github.com/joho/godotenv"
@@ -21,11 +20,11 @@ func secureHeaders(next http.Handler) http.Handler {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	reactAddress := os.Getenv("REACT_ADDRESS")
+	// reactAddress := os.Getenv("REACT_ADDRESS")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Specify origin
-		w.Header().Set("Access-Control-Allow-Origin", reactAddress)
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 
 		// Allow specific HTTP methods
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
