@@ -54,7 +54,6 @@ func (app *application) routes() http.Handler {
 
 	// expense category routes
 	router.Handler(http.MethodGet, "/api/users/categories/view", protected.ThenFunc(app.categoriesView))
-	// should also return total expenses calculation per selected category
 	router.Handler(http.MethodGet, "/api/users/categories/expenses/:categoryId", protected.ThenFunc(app.specificCategoryExpensesView))
 	router.Handler(http.MethodPost, "/api/users/categories/create", protected.ThenFunc(app.categoryCreate))
 	router.Handler(http.MethodDelete, "/api/users/categories/delete/:categoryId", protected.ThenFunc(app.categoryDelete))

@@ -164,15 +164,12 @@ func (app *application) viewSpecificUser(w http.ResponseWriter, r *http.Request)
 
 // logout the user
 func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(w, "Attempting to logout the user...")
-
 	// change session ID
 	err := app.sessionManager.RenewToken(r.Context())
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-
 	// remove authenticatedUserID from the session data so that the user is logged out
 	app.sessionManager.Remove(r.Context(), "authenticatedUserID")
 	app.setFlash(r.Context(), "You've been logged out successfully!")
