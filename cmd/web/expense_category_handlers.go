@@ -30,31 +30,21 @@ type ExpenseCategoryResponse struct {
 
 // read all user categories
 func (app *application) categoriesView(w http.ResponseWriter, r *http.Request) {
-	// Get the value of the "id" named parameter
-	params := httprouter.ParamsFromContext(r.Context())
-	id := params.ByName("expenseCategoryId")
-
-	// return a 404 Not Found in case of invalid id or error
-	if id == "" {
-		app.notFound(w)
-		return
-	}
-
-	ExpenseCategory, err := app.expenseCategory.Get(id)
-
+	expenses, err := app.expenseCategory.All()
 	if err != nil {
-		if errors.Is(err, models.ErrNoRecord) {
-			app.notFound(w)
-		} else {
-			app.serverError(w, err)
-		}
+		app.serverError(w, err)
 		return
 	}
 
-	app.sessionManager.Put(r.Context(), "flash", "ExpenseCategory successfully added!")
+	// Set the Content-Type header to application/json if you are sending JSON
+	w.Header().Set("Content-Type", "application/json")
 
-	// write the ExpenseCategory data as a plain-text HTTP response body
-	fmt.Fprintf(w, "%+v", ExpenseCategory)
+	// Write the todos to the response as JSON
+	err = json.NewEncoder(w).Encode(expenses)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 }
 
 // read all expenses of a specific category
@@ -69,7 +59,7 @@ func (app *application) specificCategoryExpensesView(w http.ResponseWriter, r *h
 		return
 	}
 
-	ExpenseCategory, err := app.expenseCategory.Get(id)
+	exps, err := app.expenseCategory.AllExpensesPerCategory(id)
 
 	if err != nil {
 		if errors.Is(err, models.ErrNoRecord) {
@@ -83,13 +73,13 @@ func (app *application) specificCategoryExpensesView(w http.ResponseWriter, r *h
 	app.sessionManager.Put(r.Context(), "flash", "ExpenseCategory successfully added!")
 
 	// write the ExpenseCategory data as a plain-text HTTP response body
-	fmt.Fprintf(w, "%+v", ExpenseCategory)
+	fmt.Fprintf(w, "%+v", exps)
 }
 
 // create
 func (app *application) categoryCreate(w http.ResponseWriter, r *http.Request) {
 
-	userId := app.sessionManager.Get(r.Context(), "userId").(string)
+	userId := app.sessionManager.Get(r.Context(), "authenticatedUserID").(string)
 	if userId == "" {
 		app.serverError(w, fmt.Errorf("userId not found in session"))
 		return
@@ -102,7 +92,7 @@ func (app *application) categoryCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Received input.Body: %s", input.Name)
+	log.Printf("Received input.Name: %s", input.Name)
 
 	// validate input
 	input.Validate()
@@ -120,11 +110,13 @@ func (app *application) categoryCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.setFlash(r.Context(), "ExpenseCategory has been created.")
+	app.setFlash(r.Context(), "Expense category has been created.")
 
 	// Create a response that includes both ID and body
 	response := ExpenseCategoryResponse{
 		ExpenseCategoryId: newExpenseCategoryId,
+		Name: input.Name,
+		Description: input.Description,
 		Flash: app.getFlash(r.Context()),
 	}
 

@@ -37,48 +37,39 @@ func (m *ExpenseCategoryModel) Insert(expenseCategoryId, userId, name, descripti
 
 // return a specific expenseCategory based on its id
 func (m *ExpenseCategoryModel) Get(expenseCategoryId string) (*ExpenseCategory, error) {
-	// Write the SQL statement we want to execute.
 	stmt := `SELECT expenseCategoryId, userId, name, description 
 			FROM ExpenseCategory WHERE expenseCategoryId = ?`
 
-	// Use the QueryRow() method on the connection pool to execute our
-	// SQL statement, passing in the untrusted id variable as the value for
-	// the placeholder parameter. This returns a pointer to a sql.Row object
-	// which holds the result from the database.
+	// This returns a pointer to a sql.Row object
+	// which holds the result from the database
 	row := m.DB.QueryRow(stmt, expenseCategoryId)
 
-	// Initialize a pointer to a new zeroed Snippet struct.
+	// Initialize a pointer to a new zeroed ExpenseCategory struct
 	exp := &ExpenseCategory{}
 
 	// Use row.Scan() to copy the values from each field in sql.Row to the
-	// corresponding field in the Snippet struct. Notice that the arguments
-	// to row.Scan are *pointers* to the place you want to copy the data
-	// into, and the number of arguments must be exactly the same as the number of
-	// columns returned by your statement.
+	// corresponding field in the ExpenseCategory struct.
+	// The arguments to row.Scan are *pointers* to the place to copy the data into
 	err := row.Scan(&exp.ExpenseCategoryId, &exp.UserId, &exp.Name, &exp.Description)
 	if err != nil {
 		// If the query returns no rows, then row.Scan() will return a
-		// sql.ErrNoRows error. We use the errors.Is() function check for
-		// that error specifically, and return our own ErrNoRecord error
-		// instead (we'll create this in a moment).
+		// sql.ErrNoRows error
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
 		} else {
 			return nil, err
 		}
 	}
-	// If everything went OK then return the ExpenseCategory object.
+	// If everything went OK then return the ExpenseCategory object
 	return exp, nil
 }
 
-// return the all created ExpenseCategorys
+// return all created ExpenseCategories
 func (m *ExpenseCategoryModel) All() ([]*ExpenseCategory, error) {
-	// SQL statement we want to execute
-	stmt := `SELECT * FROM ExpenseCategory
-			ORDER BY created DESC`
+	stmt := `SELECT * FROM ExpenseCategory`
 
 	// Use the Query() method on the connection pool to execute the stmt
-	// this returns a sql.Rows resultset containing the result of our query
+	// this returns a sql.Rows resultset containing the result of query
 	rows, err := m.DB.Query(stmt)
 	if err != nil {
 		return nil, err
@@ -90,7 +81,7 @@ func (m *ExpenseCategoryModel) All() ([]*ExpenseCategory, error) {
 	// method. Otherwise, if Query() returns an error, you'll get a panic trying to close a nil resultset
 	defer rows.Close()
 
-	// Initialize an empty slice to hold the Snippet structs
+	// Initialize an empty slice to hold the ExpenseCategory structs
 	expenseCategories := []*ExpenseCategory{}
 
 	// Use rows.Next to iterate through the rows in the resultset. This
@@ -99,41 +90,85 @@ func (m *ExpenseCategoryModel) All() ([]*ExpenseCategory, error) {
 	// resultset automatically closes itself and frees-up the underlying
 	// database connection.
 	for rows.Next() {
-		// Create a pointer to a new zeroed Snippet struct.
+		// Create a pointer to a new zeroed ExpenseCategory struct.
 		exp := &ExpenseCategory{}
 		// Use rows.Scan() to copy the values from each field in the row to
-		// the new Snippet object that we created. Again, the arguments to
-		// row.Scan() must be pointers to the place you want to copy the data into, and
-		// the number of arguments must be exactly the same as the number of
-		// columns returned by your statement.
+		// the new ExpenseCategory object
 		err = rows.Scan(&exp.ExpenseCategoryId, &exp.UserId, &exp.Name, &exp.Description)
 		if err != nil {
 			return nil, err
 		}
-		// Append it to the slice of snippets.
+		// Append it to the slice of ExpenseCategories
 		expenseCategories = append(expenseCategories, exp)
 	}
 	// When the rows.Next() loop has finished we call rows.Err() to retrieve
 	// any error that was encountered during the iteration. It's important to
 	// call this - don't assume that a successful iteration was completed
-	// over the whole resultset.
+	// over the whole resultset
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	// If everything went OK then return the Snippets slice.
+	// If everything went OK then return the ExpenseCategories slice
 	return expenseCategories, nil
 }
 
-// update
+// return all created ExpenseCategories
+func (m *ExpenseCategoryModel) AllExpensesPerCategory(categoryId string) ([]*Expense, error) {
+	stmt := `SELECT * FROM Expenses WHERE categoryId = ?
+			ORDER BY createdAt DESC`
+
+	// this returns a sql.Rows resultset containing the result of query
+	rows, err := m.DB.Query(stmt, categoryId)
+	if err != nil {
+		return nil, err
+	}
+
+	// We defer rows.Close() to ensure the sql.Rows resultset is always
+	// properly closed before the Latest() method returns
+	// Defer stmt should come *after* you check for an error from the Query()
+	// method. Otherwise, if Query() returns an error, you'll get a panic trying to close a nil resultset
+	defer rows.Close()
+
+	// Initialize an empty slice to hold the ExpenseCategory structs
+	exps := []*Expense{}
+
+	// Use rows.Next to iterate through the rows in the resultset. This
+	// prepares the first (and then each subsequent) row to be acted on by
+	// the rows.Scan() method. If iteration over all the rows completes then the
+	// resultset automatically closes itself and frees-up the underlying
+	// database connection.
+	for rows.Next() {
+		// Create a pointer to a new zeroed ExpenseCategory struct.
+		exp := &Expense{}
+		// Use rows.Scan() to copy the values from each field in the row to
+		// the new ExpenseCategory object
+		err = rows.Scan(&exp.ExpenseId, &exp.UserId, &exp.CategoryId, &exp.Description, &exp.ExpenseType, &exp.AmountInCents, &exp.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		// Append it to the slice of ExpenseCategories
+		exps = append(exps, exp)
+	}
+	// When the rows.Next() loop has finished we call rows.Err() to retrieve
+	// any error that was encountered during the iteration. It's important to
+	// call this - don't assume that a successful iteration was completed
+	// over the whole resultset
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	// If everything went OK then return the ExpenseCategories slice
+	return exps, nil
+}
+
+// update an expense category
 func (m *ExpenseCategoryModel) Put(userId, expenseCategoryId, name, description string) error {
-	// SQL statement we want to execute
 	stmt := `UPDATE ExpenseCategory 
 			SET name = ?,
 			description = ? 
 			WHERE expenseCategoryId = ? and
 			userId = ?`
 
-	// Execute the statement with the provided id and body
+	// Execute the statement
 	_, err := m.DB.Exec(stmt, name, description, expenseCategoryId, userId)
 	if err != nil {
 		log.Printf("Error while attempting ExpenseCategory update %s", err)
@@ -144,9 +179,8 @@ func (m *ExpenseCategoryModel) Put(userId, expenseCategoryId, name, description 
 	return nil
 }
 
-// delete
+// delete an expense category
 func (m *ExpenseCategoryModel) Delete(expenseCategoryId, userId string) error {
-	// Execute the statement with the provided id
 	stmt := `DELETE FROM ExpenseCategory WHERE expenseCategoryId = ? and userId = ?`
 
 	result, err := m.DB.Exec(stmt, expenseCategoryId, userId)
