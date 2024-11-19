@@ -24,55 +24,39 @@ func (app *application) CurrentBudgetIsValid(currentBudget *models.Budget, balan
     return nil
 }
 
-func (app *application) CalculateUpdatesBalance(currentBudget *models.Budget, updateType, balanceType string, sumInCents int64) (int64, int64, int64, int64, int64, error) {
-	updatedBudget := *currentBudget
+func (app *application) CalculateUpdates(
+    currentBudget *models.Budget, updateType, balanceType string, sumInCents int64, isExpense bool,
+) (int64, int64, int64, int64, int64, error) {
+    updatedBudget := *currentBudget
 
-	// Adjust checking or savings balance based on balance type
-	if balanceType == BalanceTypeChecking {
-		updatedBudget.CheckingBalance = app.updateBalance(updatedBudget.CheckingBalance, sumInCents, updateType)
-	} else if balanceType == BalanceTypeSavings {
-		updatedBudget.SavingsBalance = app.updateBalance(updatedBudget.SavingsBalance, sumInCents, updateType)
-	}	
+    // Adjust checking or savings balance based on balance type
+    if balanceType == BalanceTypeChecking {
+        updatedBudget.CheckingBalance = app.updateBalance(updatedBudget.CheckingBalance, sumInCents, updateType)
+    } else if balanceType == BalanceTypeSavings {
+        updatedBudget.SavingsBalance = app.updateBalance(updatedBudget.SavingsBalance, sumInCents, updateType)
+    }
 
-	newBudgetRemaining := updatedBudget.CheckingBalance + updatedBudget.SavingsBalance
-	var newBudgetTotal int64
+    // Calculate new budget remaining
+    newBudgetRemaining := updatedBudget.CheckingBalance + updatedBudget.SavingsBalance
 
-	switch updateType {
-	case UpdateTypeAdd:
-		newBudgetTotal = updatedBudget.BudgetTotal + sumInCents
-	case UpdateTypeSubtract:
-		newBudgetTotal = updatedBudget.BudgetTotal - sumInCents
-	}
+    // Calculate new budget total and total spent
+    var newBudgetTotal, newTotalSpent int64
+    switch updateType {
+    case UpdateTypeAdd:
+        newBudgetTotal = updatedBudget.BudgetTotal + sumInCents
+        if isExpense {
+            newTotalSpent = updatedBudget.TotalSpent - sumInCents
+        }
+    case UpdateTypeSubtract:
+        newBudgetTotal = updatedBudget.BudgetTotal - sumInCents
+        if isExpense {
+            newTotalSpent = updatedBudget.TotalSpent + sumInCents
+        }
+    }
 
-	return updatedBudget.CheckingBalance, updatedBudget.SavingsBalance, newBudgetTotal, newBudgetRemaining, updatedBudget.TotalSpent, nil
+    return updatedBudget.CheckingBalance, updatedBudget.SavingsBalance, newBudgetTotal, newBudgetRemaining, newTotalSpent, nil
 }
 
-func (app *application) CalculateUpdatesExpense(currentBudget *models.Budget, updateType, balanceType string, sumInCents int64) (int64, int64, int64, int64, int64, error) {
-	updatedBudget := *currentBudget
-
-	// Adjust checking or savings balance based on balance type
-	if balanceType == BalanceTypeChecking {
-		updatedBudget.CheckingBalance = app.updateBalance(updatedBudget.CheckingBalance, sumInCents, updateType)
-	} else if balanceType == BalanceTypeSavings {
-		updatedBudget.SavingsBalance = app.updateBalance(updatedBudget.SavingsBalance, sumInCents, updateType)
-	}	
-
-	newBudgetRemaining := updatedBudget.CheckingBalance + updatedBudget.SavingsBalance
-
-	var newBudgetTotal int64
-	var newTotalSpent int64
-
-	switch updateType {
-	case UpdateTypeAdd:
-		newBudgetTotal = updatedBudget.BudgetTotal + sumInCents
-		newTotalSpent = updatedBudget.TotalSpent - sumInCents
-	case UpdateTypeSubtract:
-		newBudgetTotal = updatedBudget.BudgetTotal - sumInCents
-		newTotalSpent = updatedBudget.TotalSpent + sumInCents
-	}
-
-	return updatedBudget.CheckingBalance, updatedBudget.SavingsBalance, newBudgetTotal, newBudgetRemaining, newTotalSpent, nil
-}
 
 func (app *application) updateBalance(currentBalance, sumInCents int64, updateType string) int64 {
 	var updatedBalance int64

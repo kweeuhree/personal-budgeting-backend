@@ -104,6 +104,11 @@ func (app *application) expenseCreate(w http.ResponseWriter, r *http.Request) {
 
 	newId := uuid.New().String()
 
+	_, err = app.handleExpenseUpdate(w, userId, input.ExpenseType, UpdateTypeSubtract, input.AmountInCents)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 	
 	// Insert the new Expense using the ID and body
 	id, err := app.expenses.Insert(newId, userId, input.CategoryId, input.Description, input.ExpenseType, input.AmountInCents)
@@ -113,12 +118,6 @@ func (app *application) expenseCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.setFlash(r.Context(), "Expense has been created.")
-
-	_, err = app.handleExpenseUpdate(w, userId, input.ExpenseType, UpdateTypeSubtract, input.AmountInCents)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
 
 	// Create a response that includes both ID and body
 	response := ExpenseResponse{
@@ -174,13 +173,6 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update the new Expense 
-	err = app.expenses.Put(expenseId, userId, input.CategoryId, input.Description, input.ExpenseType, input.AmountInCents)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
 	app.setFlash(r.Context(), "Expense has been updated.")
 
 	if input.AmountInCents != 0 {
@@ -202,6 +194,13 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 			app.serverError(w, err)
 			return
 		}
+	}
+
+	// Update the new Expense 
+	err = app.expenses.Put(expenseId, userId, input.CategoryId, input.Description, input.ExpenseType, input.AmountInCents)
+	if err != nil {
+		app.serverError(w, err)
+		return
 	}
 
 	// Create a response that includes both ID and body
@@ -255,4 +254,10 @@ func (app *application) expenseDelete(w http.ResponseWriter, r *http.Request) {
 		app.handleExpenseUpdate(w, userId, deletedExpense.ExpenseType, UpdateTypeAdd, deletedExpense.AmountInCents)
 		return
 	}
+}
+
+func (app *application) handleExpenseUpdate(w http.ResponseWriter, userId, balanceType, updateType string, sumInCents int64) (*models.Budget, error) {
+    return app.handleBudgetUpdate(w, userId, balanceType, updateType, sumInCents, func(currentBudget *models.Budget, updateType, balanceType string, sumInCents int64) (int64, int64, int64, int64, int64, error) {
+        return app.CalculateUpdates(currentBudget, updateType, balanceType, sumInCents, true)
+    })
 }

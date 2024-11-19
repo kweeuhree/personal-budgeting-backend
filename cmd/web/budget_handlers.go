@@ -182,100 +182,50 @@ func (app *application) budgetUpdate(w http.ResponseWriter, r *http.Request) {
 	app.handleBalanceUpdate(w, userId, input.BalanceType, input.UpdateType, input.UpdateSumInCents)
 }
 
-func (app *application) handleBalanceUpdate(w http.ResponseWriter, userId, balanceType, updateType string, sumInCents int64) (*models.Budget, error) {
-	// Fetch the current budget for the user
-	currentBudget, err := app.budget.GetBudgetByUserId(userId)
+func (app *application) handleBudgetUpdate(
+    w http.ResponseWriter, 
+    userId, balanceType, updateType string, 
+    sumInCents int64, 
+    calculateFunc func(*models.Budget, string, string, int64) (int64, int64, int64, int64, int64, error),
+) (*models.Budget, error) {
+    // Fetch the current budget for the user
+    currentBudget, err := app.budget.GetBudgetByUserId(userId)
+    if err != nil {
+        return nil, fmt.Errorf("failed to fetch current budget: %v", err)
+    }
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch current budget: %v", err)
-	}
+    // Validate if update type is subtract
+    if updateType == UpdateTypeSubtract {
+        err = app.CurrentBudgetIsValid(currentBudget, balanceType, sumInCents)
+        if err != nil {
+			http.Error(w, "Insufficient funds to add this expense", http.StatusUnprocessableEntity)
+            return nil, fmt.Errorf("unable to update budget: %v", err)
+        }
+    }
 
-	if updateType == UpdateTypeSubtract {
-		// validate expenses
-		err = app.CurrentBudgetIsValid(currentBudget, balanceType, sumInCents)
-		if err != nil {
-			return nil, fmt.Errorf("unable to update budget: %v", err)
-		}
-	}
+    // Calculate updated budget values using the provided function
+    checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := calculateFunc(currentBudget, updateType, balanceType, sumInCents)
+    if err != nil {
+        return nil, err
+    }
 
-	// Calculate updated budget values
-	checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateUpdatesBalance(currentBudget, updateType, balanceType, sumInCents)
+    // Update the budget in the database
+    app.updateBudgetInDB(currentBudget.BudgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
 
-	if err != nil {
-		return nil, err // Return the error if the balanceType was invalid
-	}
+    // Create the updated budget model
+    updatedBudget := &models.Budget{
+        BudgetId:        currentBudget.BudgetId,
+        CheckingBalance: checkingBalance,
+        SavingsBalance:  savingsBalance,
+        BudgetTotal:     budgetTotal,
+        BudgetRemaining: budgetRemaining,
+        TotalSpent:      totalSpent,
+    }
 
-	// Update the budget
-	app.updateBudgetInDB(
-		currentBudget.BudgetId, 
-		userId, 
-		checkingBalance, 
-		savingsBalance, 
-		budgetTotal, 
-		budgetRemaining, 
-		totalSpent,
-	)
+    // Encode the response
+    encodeJSON(w, http.StatusOK, updatedBudget)
 
-	updatedBudget := &models.Budget{
-		BudgetId:        currentBudget.BudgetId,
-		CheckingBalance: checkingBalance,
-		SavingsBalance:  savingsBalance,
-		BudgetTotal:     budgetTotal,
-		BudgetRemaining: budgetRemaining,
-		TotalSpent:      totalSpent,
-	}
-
-	encodeJSON(w, http.StatusOK, updatedBudget)
-	// Return the updated budget
-	return updatedBudget, nil
-}
-
-func (app *application) handleExpenseUpdate(w http.ResponseWriter, userId, balanceType, updateType string, sumInCents int64) (*models.Budget, error) {
-	// Fetch the current budget for the user
-	currentBudget, err := app.budget.GetBudgetByUserId(userId)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch current budget: %v", err)
-	}
-
-	if updateType == UpdateTypeSubtract {
-		// validate expenses
-		err = app.CurrentBudgetIsValid(currentBudget, balanceType, sumInCents)
-		if err != nil {
-			return nil, fmt.Errorf("unable to update budget: %v", err)
-		}
-	}
-
-	// Calculate updated budget values
-	checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateUpdatesExpense(currentBudget, updateType, balanceType, sumInCents)
-
-	if err != nil {
-		return nil, err // Return the error if the balanceType was invalid
-	}
-
-	// Update the budget
-	app.updateBudgetInDB(
-		currentBudget.BudgetId, 
-		userId, 
-		checkingBalance, 
-		savingsBalance, 
-		budgetTotal, 
-		budgetRemaining, 
-		totalSpent,
-	)
-
-	updatedBudget := &models.Budget{
-		BudgetId:        currentBudget.BudgetId,
-		CheckingBalance: checkingBalance,
-		SavingsBalance:  savingsBalance,
-		BudgetTotal:     budgetTotal,
-		BudgetRemaining: budgetRemaining,
-		TotalSpent:      totalSpent,
-	}
-
-	encodeJSON(w, http.StatusOK, updatedBudget)
-	// Return the updated budget
-	return updatedBudget, nil
+    return updatedBudget, nil
 }
 
 // update the budget in the database
@@ -321,4 +271,9 @@ func (app *application) budgetDelete(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *application) handleBalanceUpdate(w http.ResponseWriter, userId, balanceType, updateType string, sumInCents int64) (*models.Budget, error) {
+    return app.handleBudgetUpdate(w, userId, balanceType, updateType, sumInCents, func(currentBudget *models.Budget, updateType, balanceType string, sumInCents int64) (int64, int64, int64, int64, int64, error) {
+        return app.CalculateUpdates(currentBudget, updateType, balanceType, sumInCents, false)
+    })
+}
 
