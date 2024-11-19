@@ -36,3 +36,9 @@ func (input *BudgetInput) Validate() {
 	checkingBalanceStr := strconv.FormatInt(input.CheckingBalance, 10)
 	input.CheckField(validator.NotBlank(checkingBalanceStr), "checkingBalance", "This field cannot be blank")
 }
+
+func (input *BudgetUpdate) Validate() {
+	sumInCentsStr := strconv.FormatInt(input.UpdateSumInCents, 10)
+	input.CheckField(validator.NotBlank(sumInCentsStr), "updateSumInCents", "This field cannot be blank")
+	input.CheckField(validator.NotBlank(input.UpdateType), "updateType", "This field cannot be blank")
+}
