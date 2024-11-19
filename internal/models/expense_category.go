@@ -114,7 +114,8 @@ func (m *ExpenseCategoryModel) All() ([]*ExpenseCategory, error) {
 
 // return all created ExpenseCategories
 func (m *ExpenseCategoryModel) AllExpensesPerCategory(categoryId string) ([]*Expense, error) {
-	stmt := `SELECT * FROM Expenses WHERE categoryId = ?
+	stmt := `SELECT expenseId, userId, categoryId, description, expenseType, amountInCents, createdAt 
+	 		FROM Expenses WHERE categoryId = ?
 			ORDER BY createdAt DESC`
 
 	// this returns a sql.Rows resultset containing the result of query

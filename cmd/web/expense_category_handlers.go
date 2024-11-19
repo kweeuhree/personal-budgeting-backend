@@ -30,30 +30,20 @@ type ExpenseCategoryResponse struct {
 
 // read all user categories
 func (app *application) categoriesView(w http.ResponseWriter, r *http.Request) {
-	expenses, err := app.expenseCategory.All()
+	exps, err := app.expenseCategory.All()
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	// Set the Content-Type header to application/json if you are sending JSON
-	w.Header().Set("Content-Type", "application/json")
-
-	// Write the todos to the response as JSON
-	err = json.NewEncoder(w).Encode(expenses)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
+	encodeJSON(w, http.StatusOK, exps)
 }
 
 // read all expenses of a specific category
 func (app *application) specificCategoryExpensesView(w http.ResponseWriter, r *http.Request) {
-	// Get the value of the "id" named parameter
 	params := httprouter.ParamsFromContext(r.Context())
-	id := params.ByName("expenseCategoryId")
+	id := params.ByName("categoryId")
 
-	// return a 404 Not Found in case of invalid id or error
 	if id == "" {
 		app.notFound(w)
 		return
@@ -70,10 +60,17 @@ func (app *application) specificCategoryExpensesView(w http.ResponseWriter, r *h
 		return
 	}
 
-	app.sessionManager.Put(r.Context(), "flash", "ExpenseCategory successfully added!")
+	var total int64
+	if len(exps) > 1 {
+		total = app.GetExpensesTotal(exps)
+	}
+	
+    response := map[string]interface{}{
+		"totalSpent": total,
+        "expenses": exps,
+    }
 
-	// write the ExpenseCategory data as a plain-text HTTP response body
-	fmt.Fprintf(w, "%+v", exps)
+    encodeJSON(w, http.StatusOK, response)
 }
 
 // create
