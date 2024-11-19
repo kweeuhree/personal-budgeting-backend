@@ -53,7 +53,16 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst interface{}) error {
 func encodeJSON(w http.ResponseWriter, status int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(data)
+	
+	// Marshal the data into a pretty-printed JSON format
+	jsonData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// Write the pretty-printed JSON to the response body
+	_, err = w.Write(jsonData)
+	return err
 }
 
 // Helper method to set a flash message in the session
