@@ -135,11 +135,11 @@ func (m *ExpenseModel) Put(expenseId, userId, categoryId, description, expenseTy
 }
 
 // delete
-func (m *ExpenseModel) Delete(expenseId string) error {
+func (m *ExpenseModel) Delete(expenseId, userId string) error {
 	// Execute the statement with the provided id
-	stmt := `DELETE FROM Expenses WHERE expenseId = ?`
+	stmt := `DELETE FROM Expenses WHERE expenseId = ? and userId = ?`
 
-	result, err := m.DB.Exec(stmt, expenseId)
+	result, err := m.DB.Exec(stmt, expenseId, userId)
 	if err != nil {
 		log.Printf("Error while deleting a Expense: %s", err)
 		return err
@@ -159,5 +159,7 @@ func (m *ExpenseModel) Delete(expenseId string) error {
 	}
 
 	log.Printf("Deleted successfully")
+
+	
 	return nil
 }
