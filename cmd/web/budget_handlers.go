@@ -188,14 +188,15 @@ func (app *application) handleBudgetUpdate(
     if updateType == UpdateTypeSubtract {
         err = app.CurrentBudgetIsValid(currentBudget, balanceType, sumInCents)
         if err != nil {
-			http.Error(w, "Insufficient funds to add this expense", http.StatusUnprocessableEntity)
-            return nil, fmt.Errorf("unable to update budget: %v", err)
+			app.serverError(w, fmt.Errorf("failed to fetch current budget: %v", err))
+            return nil, err
         }
     }
 
     // Calculate updated budget values using the provided function
     checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := calculateFunc(currentBudget, updateType, balanceType, sumInCents)
     if err != nil {
+		app.serverError(w, fmt.Errorf("failed to update budget in DB: %v", err))
         return nil, err
     }
 

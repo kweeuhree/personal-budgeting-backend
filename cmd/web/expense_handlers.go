@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -30,21 +29,13 @@ type ExpenseResponse struct {
 
 // read all user expenses
 func (app *application) expensesView(w http.ResponseWriter, r *http.Request) {
-	expenses, err := app.expenses.All()
+	exps, err := app.expenses.All()
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	// Set the Content-Type header to application/json if you are sending JSON
-	w.Header().Set("Content-Type", "application/json")
-
-	// Write the todos to the response as JSON
-	err = json.NewEncoder(w).Encode(expenses)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
+	encodeJSON(w, http.StatusOK, exps)
 }
 
 // read a specific user expense
@@ -208,6 +199,7 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 
 // delete
 func (app *application) expenseDelete(w http.ResponseWriter, r *http.Request) {
+	log.Printf("deleting an expense")
 	userId := app.sessionManager.Get(r.Context(), "authenticatedUserID").(string)
 	if userId == "" {
 		app.serverError(w, fmt.Errorf("userId not found in session"))

@@ -54,6 +54,10 @@ func (app *application) CalculateUpdates(
         }
     }
 
+    if newTotalSpent < 0 {
+        newTotalSpent = 0
+    }
+
     return updatedBudget.CheckingBalance, updatedBudget.SavingsBalance, newBudgetTotal, newBudgetRemaining, newTotalSpent, nil
 }
 
