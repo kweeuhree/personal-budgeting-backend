@@ -39,24 +39,24 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodPost, "/api/users/logout", protected.ThenFunc(app.userLogout))
 	
 	// budget routes
-	router.Handler(http.MethodGet, "/api/users/budget/:budgetId/view", protected.ThenFunc(app.budgetView))
-	router.Handler(http.MethodGet, "/api/users/budget/:budgetId/summary", protected.ThenFunc(app.budgetSummary))
-	router.Handler(http.MethodPost, "/api/users/budget/create", protected.ThenFunc(app.budgetCreate))
-	router.Handler(http.MethodPut, "/api/users/budget/update/:budgetId", protected.ThenFunc(app.budgetUpdate))
-	router.Handler(http.MethodDelete, "/api/users/budget/delete/:budgetId", protected.ThenFunc(app.budgetDelete))
+	router.Handler(http.MethodGet, "/api/budget/:budgetId/view", protected.ThenFunc(app.budgetView))
+	router.Handler(http.MethodGet, "/api/budget/:budgetId/summary", protected.ThenFunc(app.budgetSummary))
+	router.Handler(http.MethodPost, "/api/budget/create", protected.ThenFunc(app.budgetCreate))
+	router.Handler(http.MethodPut, "/api/budget/update/:budgetId", protected.ThenFunc(app.budgetUpdate))
+	router.Handler(http.MethodDelete, "/api/budget/delete/:budgetId", protected.ThenFunc(app.budgetDelete))
 	
 	// expense routes
-	router.Handler(http.MethodGet, "/api/users/expenses/view", protected.ThenFunc(app.expensesView))
-	router.Handler(http.MethodGet, "/api/users/expenses/view/:expenseId", protected.ThenFunc(app.specificExpenseView))
-	router.Handler(http.MethodPost, "/api/users/expenses/create", protected.ThenFunc(app.expenseCreate))
-	router.Handler(http.MethodPut, "/api/users/expenses/update/:expenseId", protected.ThenFunc(app.expenseUpdate))
-	router.Handler(http.MethodDelete, "/api/users/expenses/delete/:expenseId", protected.ThenFunc(app.expenseDelete))
+	router.Handler(http.MethodGet, "/api/expenses/view", protected.ThenFunc(app.expensesView))
+	router.Handler(http.MethodGet, "/api/expenses/view/:expenseId", protected.ThenFunc(app.specificExpenseView))
+	router.Handler(http.MethodPost, "/api/expenses/create", protected.ThenFunc(app.expenseCreate))
+	router.Handler(http.MethodPut, "/api/expenses/update/:expenseId", protected.ThenFunc(app.expenseUpdate))
+	router.Handler(http.MethodDelete, "/api/expenses/delete/:expenseId", protected.ThenFunc(app.expenseDelete))
 
 	// expense category routes
-	router.Handler(http.MethodGet, "/api/users/categories/view", protected.ThenFunc(app.categoriesView))
-	router.Handler(http.MethodGet, "/api/users/categories/expenses/:categoryId", protected.ThenFunc(app.specificCategoryExpensesView))
-	router.Handler(http.MethodPost, "/api/users/categories/create", protected.ThenFunc(app.categoryCreate))
-	router.Handler(http.MethodDelete, "/api/users/categories/delete/:categoryId", protected.ThenFunc(app.categoryDelete))
+	router.Handler(http.MethodGet, "/api/categories/view", protected.ThenFunc(app.categoriesView))
+	router.Handler(http.MethodGet, "/api/categories/expenses/:categoryId", protected.ThenFunc(app.specificCategoryExpensesView))
+	router.Handler(http.MethodPost, "/api/categories/create", protected.ThenFunc(app.categoryCreate))
+	router.Handler(http.MethodDelete, "/api/categories/delete/:categoryId", protected.ThenFunc(app.categoryDelete))
 	
 	// Create a middleware chain containing our 'standard' middleware
 	// which will be used for every request our application receives.
