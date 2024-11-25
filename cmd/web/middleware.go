@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	// environment variables
 	"github.com/joho/godotenv"
@@ -20,11 +21,22 @@ func secureHeaders(next http.Handler) http.Handler {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	// reactAddress := os.Getenv("REACT_ADDRESS")
+	reactAddress := os.Getenv("REACT_ADDRESS")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		
+		 // Handle OPTIONS requests for CORS preflight
+		if r.Method == http.MethodOptions {
+            w.Header().Set("Access-Control-Allow-Origin", reactAddress)
+            w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+            w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            w.Header().Set("Access-Control-Allow-Credentials", "true") // Allow credentials (cookies)
+            w.WriteHeader(http.StatusOK) // Respond with HTTP 200 OK for preflight
+            return
+        }
 		// Specify origin
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", reactAddress)
 
 		// Allow specific HTTP methods
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
