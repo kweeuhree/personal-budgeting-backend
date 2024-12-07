@@ -112,37 +112,47 @@ func (app *application) expenseCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newId := uuid.New().String()
-
-	_, err = app.handleExpenseUpdate(w, userId, input.ExpenseType, UpdateTypeSubtract, input.AmountInCents)
+	// validate the input against existing balance
+	err = app.CurrentBudgetIsValid(userId, input.ExpenseType, input.AmountInCents)
+		
 	if err != nil {
-		app.serverError(w, err)
+		app.serverError(w, fmt.Errorf("failed to update current budget: %v", err))
 		return
 	}
-	
-	// Insert the new Expense using the ID and body
+
+	newId := uuid.New().String()
+
 	id, err := app.expenses.Insert(newId, userId, input.CategoryId, input.Description, input.ExpenseType, input.AmountInCents)
 	if err != nil {
 		app.serverError(w, fmt.Errorf("unable to add an expense %d; %s", input.AmountInCents, err))
 		return
 	}
 
-	// app.setFlash(r.Context(), "Expense has been created.")
+	budgetId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateBudgetUpdates(userId, UpdateTypeSubtract, input.ExpenseType, input.AmountInCents, true)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
-	// // Create a response that includes both ID and body
-	// response := ExpenseResponse{
-	// 	ExpenseId:  id,
-	// 	AmountInCents: input.AmountInCents,
-	// 	Flash: app.getFlash(r.Context()),
-	// }
+	 // Update the budget in the database
+	 app.UpdateBudgetInDB(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
 
-	// // Write the response struct to the response as JSON
-	// err = encodeJSON(w, http.StatusCreated, response)
-	// if err != nil {
-	// 	app.serverError(w, err)
-	// 	return
-	// }
-	log.Printf("Expense successfully created: %d", id)
+    app.setFlash(r.Context(), "Expense has been created.")
+
+	response := ExpenseResponse{
+		ExpenseId:  id,
+		CategoryId: &input.CategoryId,
+		AmountInCents: input.AmountInCents,
+		Description: input.Description,
+		ExpenseType: input.ExpenseType,
+		Flash: app.getFlash(r.Context()),
+	}
+
+	err = encodeJSON(w, http.StatusCreated, response)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 }
 
 // update
@@ -180,7 +190,7 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 	app.setFlash(r.Context(), "Expense has been updated.")
 
 	if input.AmountInCents != 0 {
-		updatedBudget, err := app.handleExpenseUpdate(w, userId, input.ExpenseType, UpdateTypeSubtract, input.AmountInCents)
+		_, _, _, _, _, _, err := app.CalculateBudgetUpdates(userId, UpdateTypeSubtract, input.ExpenseType, input.AmountInCents, true)
 		if err != nil {
 			app.serverError(w, err)
 			return
@@ -192,7 +202,7 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 			Flash: app.getFlash(r.Context()),
 		}
 
-		log.Printf("Budget successfully updated: %+v", updatedBudget)
+		log.Printf("Budget successfully updated")
 		err = encodeJSON(w, http.StatusOK, response)
 		if err != nil {
 			app.serverError(w, err)
@@ -209,7 +219,11 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// Create a response that includes both ID and body
 	response := ExpenseResponse{
-		ExpenseId:    expenseId,
+		ExpenseId:  expenseId,
+		CategoryId: &input.CategoryId,
+		AmountInCents: input.AmountInCents,
+		Description: input.Description,
+		ExpenseType: input.ExpenseType,
 		Flash: app.getFlash(r.Context()),
 	}
 
@@ -251,12 +265,14 @@ func (app *application) expenseDelete(w http.ResponseWriter, r *http.Request) {
 	} 
 	
 	// add the expense amount back to the budget
-	app.handleExpenseUpdate(w, userId, deletedExpense.ExpenseType, UpdateTypeAdd, deletedExpense.AmountInCents)
-	// encodeJSON(w, http.StatusOK, "Deleted successfully!")
-}
+	budgetId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateBudgetUpdates(userId, UpdateTypeAdd, deletedExpense.ExpenseType, deletedExpense.AmountInCents, true)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 
-func (app *application) handleExpenseUpdate(w http.ResponseWriter, userId, balanceType, updateType string, sumInCents int64) (*models.Budget, error) {
-    return app.handleBudgetUpdate(w, userId, balanceType, updateType, sumInCents, func(currentBudget *models.Budget, updateType, balanceType string, sumInCents int64) (int64, int64, int64, int64, int64, error) {
-        return app.CalculateUpdates(currentBudget, updateType, balanceType, sumInCents, true)
-    })
+	 // Update the budget in the database
+	 app.UpdateBudgetInDB(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
+	 
+	encodeJSON(w, http.StatusOK, "Deleted successfully!")
 }
