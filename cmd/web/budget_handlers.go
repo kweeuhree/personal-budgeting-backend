@@ -129,7 +129,6 @@ func (app *application) budgetCreate(w http.ResponseWriter, r *http.Request) {
 
 	app.setFlash(r.Context(), "Budget has been created.")
 
-	// Create a response that includes both ID and body
 	response := BudgetResponse{
 		BudgetId:    id,
 		CheckingBalance:  input.CheckingBalance,
@@ -138,7 +137,6 @@ func (app *application) budgetCreate(w http.ResponseWriter, r *http.Request) {
 		Flash: app.getFlash(r.Context()),
 	}
 
-	// Write the response struct to the response as JSON
 	err = encodeJSON(w, http.StatusCreated, response)
 	if err != nil {
 		app.serverError(w, err)
@@ -178,67 +176,72 @@ func (app *application) budgetUpdate(w http.ResponseWriter, r *http.Request) {
 		encodeJSON(w, http.StatusBadRequest, input.FieldErrors)
 		return
 	}
-	app.handleBalanceUpdate(w, userId, input.BalanceType, input.UpdateType, input.UpdateSumInCents)
+
+	// if updateType is Subtract, validate the input, otherwise just update the budget
+	if ( input.UpdateType == UpdateTypeSubtract) {
+		// validate the input against existing balance
+		err = app.CurrentBudgetIsValid(userId, input.BalanceType, input.UpdateSumInCents)
+		
+		if err != nil {
+			app.serverError(w, fmt.Errorf("failed to update current budget: %v", err))
+			return
+		}
+	}
+
+	updatedBudget, err := app.handleBudgetUpdate(userId, input.BalanceType, input.UpdateType, input.UpdateSumInCents)
+    if err != nil {
+		app.serverError(w, fmt.Errorf("failed to update current budget: %v", err))
+		return
+    }
+
+	app.setFlash(r.Context(), "Budget has been updated.")
+
+	response := &BudgetResponse{
+		BudgetId: budgetId,
+		CheckingBalance: updatedBudget.CheckingBalance,
+		SavingsBalance: updatedBudget.SavingsBalance,
+		BudgetTotal: updatedBudget.BudgetTotal,
+		BudgetRemaining: updatedBudget.BudgetRemaining,
+		TotalSpent: updatedBudget.TotalSpent,
+		UpdatedAt: updatedBudget.UpdatedAt.GoString(),
+		Flash: app.getFlash(r.Context()),
+	}
+
+	err = encodeJSON(w, http.StatusCreated, response)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
 }
 
 func (app *application) handleBudgetUpdate(
-    w http.ResponseWriter, 
     userId, balanceType, updateType string, 
     sumInCents int64, 
-    calculateFunc func(*models.Budget, string, string, int64) (int64, int64, int64, int64, int64, error),
 ) (*models.Budget, error) {
-    // Fetch the current budget for the user
-    currentBudget, err := app.budget.GetBudgetByUserId(userId)
-    if err != nil {
-        return nil, fmt.Errorf("failed to fetch current budget: %v", err)
-    }
 
-    // Validate if update type is subtract
-    if updateType == UpdateTypeSubtract {
-        err = app.CurrentBudgetIsValid(currentBudget, balanceType, sumInCents)
-        if err != nil {
-			app.serverError(w, fmt.Errorf("failed to fetch current budget: %v", err))
-            return nil, err
-        }
-    }
-
-    // Calculate updated budget values using the provided function
-    checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := calculateFunc(currentBudget, updateType, balanceType, sumInCents)
+    budgetId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateBudgetUpdates(userId, updateType, balanceType, sumInCents, false)
     if err != nil {
-		app.serverError(w, fmt.Errorf("failed to update budget in DB: %v", err))
         return nil, err
     }
 
     // Update the budget in the database
-    app.updateBudgetInDB(currentBudget.BudgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
+    app.UpdateBudgetInDB(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
 
     // Create the updated budget model
     updatedBudget := &models.Budget{
-        BudgetId:        currentBudget.BudgetId,
+        BudgetId:        budgetId,
         CheckingBalance: checkingBalance,
         SavingsBalance:  savingsBalance,
         BudgetTotal:     budgetTotal,
         BudgetRemaining: budgetRemaining,
         TotalSpent:      totalSpent,
     }
-
-	encodedBudget := &BudgetResponse{
-		BudgetId:        currentBudget.BudgetId,
-        CheckingBalance: checkingBalance,
-        SavingsBalance:  savingsBalance,
-        BudgetTotal:     budgetTotal,
-        BudgetRemaining: budgetRemaining,
-        TotalSpent:      totalSpent,
-	}
-
-    // Encode the response
-    encodeJSON(w, http.StatusOK, encodedBudget)
 
     return updatedBudget, nil
 }
 
 // update the budget in the database
-func (app *application) updateBudgetInDB(budgetId, userId string, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent int64) {
+func (app *application) UpdateBudgetInDB(budgetId, userId string, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent int64) {
 	err := app.budget.Put(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
 	if err != nil {
 		log.Printf("Failed to update budget with ID %s for user %s: %s", budgetId, userId, err)
@@ -278,10 +281,3 @@ func (app *application) budgetDelete(w http.ResponseWriter, r *http.Request) {
 	
 	encodeJSON(w, http.StatusOK, "Deleted successfully!")
 }
-
-func (app *application) handleBalanceUpdate(w http.ResponseWriter, userId, balanceType, updateType string, sumInCents int64) (*models.Budget, error) {
-    return app.handleBudgetUpdate(w, userId, balanceType, updateType, sumInCents, func(currentBudget *models.Budget, updateType, balanceType string, sumInCents int64) (int64, int64, int64, int64, int64, error) {
-        return app.CalculateUpdates(currentBudget, updateType, balanceType, sumInCents, false)
-    })
-}
-
