@@ -3,11 +3,17 @@ package main
 import (
 	"errors"
 	"fmt"
-
-	"kweeuhree.personal-budgeting-backend/internal/models"
+	"log"
 )
 
-func (app *application) CurrentBudgetIsValid(currentBudget *models.Budget, balanceType string, sumInCents int64) (error) {
+func (app *application) CurrentBudgetIsValid(userId, balanceType string, sumInCents int64) (error) {
+    // Fetch the current budget for the user
+    currentBudget, err := app.budget.GetBudgetByUserId(userId)
+
+    if err != nil {
+        return fmt.Errorf("failed to fetch current budget: %v", err)
+    }
+
     if currentBudget == nil {
         return errors.New("current budget cannot be null")
     }
@@ -24,9 +30,15 @@ func (app *application) CurrentBudgetIsValid(currentBudget *models.Budget, balan
     return nil
 }
 
-func (app *application) CalculateUpdates(
-    currentBudget *models.Budget, updateType, balanceType string, sumInCents int64, isExpense bool,
-) (int64, int64, int64, int64, int64, error) {
+func (app *application) CalculateBudgetUpdates(
+   userId, updateType, balanceType string, sumInCents int64, isExpense bool,
+) (string, int64, int64, int64, int64, int64, error) {
+    currentBudget, err := app.budget.GetBudgetByUserId(userId)
+    log.Printf("Current Budget: %+v", currentBudget)
+    if err != nil {
+        return "", 0, 0, 0, 0, 0, fmt.Errorf("failed to fetch current budget: %v", err)
+    }
+
     updatedBudget := *currentBudget
 
     // Adjust checking or savings balance based on balance type
@@ -61,7 +73,7 @@ func (app *application) CalculateUpdates(
         newTotalSpent = 0
     }
 
-    return updatedBudget.CheckingBalance, updatedBudget.SavingsBalance, newBudgetTotal, newBudgetRemaining, newTotalSpent, nil
+    return updatedBudget.BudgetId, updatedBudget.CheckingBalance, updatedBudget.SavingsBalance, newBudgetTotal, newBudgetRemaining, newTotalSpent, nil
 }
 
 
