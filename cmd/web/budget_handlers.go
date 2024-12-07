@@ -75,8 +75,17 @@ func (app *application) budgetView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// write the budget data as a plain-text HTTP response body
-	fmt.Fprintf(w, "%+v", budget)
+	response := &BudgetResponse{
+		BudgetId: budgetId,
+		CheckingBalance: budget.CheckingBalance,
+		SavingsBalance: budget.SavingsBalance,
+		BudgetTotal: budget.BudgetTotal,
+		BudgetRemaining: budget.BudgetRemaining,
+		TotalSpent: budget.TotalSpent,
+		UpdatedAt: budget.UpdatedAt.GoString(),
+	}
+
+	encodeJSON(w, http.StatusOK, response)
 }
 
 func (app *application) budgetSummary(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +139,7 @@ func (app *application) budgetCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the response struct to the response as JSON
-	err = encodeJSON(w, http.StatusOK, response)
+	err = encodeJSON(w, http.StatusCreated, response)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -213,8 +222,17 @@ func (app *application) handleBudgetUpdate(
         TotalSpent:      totalSpent,
     }
 
+	encodedBudget := &BudgetResponse{
+		BudgetId:        currentBudget.BudgetId,
+        CheckingBalance: checkingBalance,
+        SavingsBalance:  savingsBalance,
+        BudgetTotal:     budgetTotal,
+        BudgetRemaining: budgetRemaining,
+        TotalSpent:      totalSpent,
+	}
+
     // Encode the response
-    encodeJSON(w, http.StatusOK, updatedBudget)
+    encodeJSON(w, http.StatusOK, encodedBudget)
 
     return updatedBudget, nil
 }
@@ -246,6 +264,13 @@ func (app *application) budgetDelete(w http.ResponseWriter, r *http.Request) {
 	
 	// Delete the budget using the ID
 	err := app.budget.Delete(budgetId, userId)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	// Delete all expenses assosiated with that user
+	err = app.expenses.DeleteAll(userId)
 	if err != nil {
 		app.serverError(w, err)
 		return

@@ -65,12 +65,13 @@ func (m *ExpenseCategoryModel) Get(expenseCategoryId string) (*ExpenseCategory, 
 }
 
 // return all created ExpenseCategories
-func (m *ExpenseCategoryModel) All() ([]*ExpenseCategory, error) {
-	stmt := `SELECT * FROM ExpenseCategory`
+func (m *ExpenseCategoryModel) All(userId string) ([]*ExpenseCategory, error) {
+	stmt := `SELECT * FROM ExpenseCategory
+			WHERE userId = ?`
 
 	// Use the Query() method on the connection pool to execute the stmt
 	// this returns a sql.Rows resultset containing the result of query
-	rows, err := m.DB.Query(stmt)
+	rows, err := m.DB.Query(stmt, userId)
 	if err != nil {
 		return nil, err
 	}

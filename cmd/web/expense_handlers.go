@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid" // router
 	"kweeuhree.personal-budgeting-backend/internal/models"
@@ -13,29 +14,51 @@ import (
 
 // Input struct for creating and updating expenses
 type ExpenseInput struct {
+	Description   string  `json:"description"`
 	AmountInCents int64   `json:"amountInCents"`
 	CategoryId	  string  `json:"categoryId"`
-	Description   string  `json:"description"`
 	ExpenseType   string  `json:"expenseType"`
 	validator.Validator
 }
 
 // // Response struct for returning expense data
 type ExpenseResponse struct {
-	ExpenseId    	string 			`json:"expenseId"`
-	AmountInCents	int64   		`json:"amountInCents"`
-	Flash 			string			`json:"flash"`
+	ExpenseId    	string 		`json:"expenseId"`
+	CategoryId	    *string  	`json:"categoryId"`
+	AmountInCents	int64   	`json:"amountInCents"`
+	Description   	string  	`json:"description"`
+	ExpenseType   	string  	`json:"expenseType"`
+	CreatedAt		time.Time 	`json:"createdAt"`
+	Flash 			string		`json:"flash"`
 }
 
 // read all user expenses
 func (app *application) expensesView(w http.ResponseWriter, r *http.Request) {
-	exps, err := app.expenses.All()
+	userId := app.sessionManager.Get(r.Context(), "authenticatedUserID").(string)
+	if userId == "" {
+		app.serverError(w, fmt.Errorf("userId not found in session"))
+		return
+	}
+	
+	exps, err := app.expenses.All(userId)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	encodeJSON(w, http.StatusOK, exps)
+	response := make([]ExpenseResponse, len(exps))
+	for i, exp := range exps {
+		response[i] = ExpenseResponse{
+			ExpenseId: exp.ExpenseId,
+			CategoryId: exp.CategoryId,
+			AmountInCents: exp.AmountInCents,
+			Description: exp.Description,
+			ExpenseType: exp.ExpenseType,
+			CreatedAt: exp.CreatedAt,
+		}
+	}
+
+	encodeJSON(w, http.StatusOK, response)
 }
 
 // read a specific user expense
@@ -104,21 +127,22 @@ func (app *application) expenseCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	app.setFlash(r.Context(), "Expense has been created.")
+	// app.setFlash(r.Context(), "Expense has been created.")
 
-	// Create a response that includes both ID and body
-	response := ExpenseResponse{
-		ExpenseId:  id,
-		AmountInCents: input.AmountInCents,
-		Flash: app.getFlash(r.Context()),
-	}
+	// // Create a response that includes both ID and body
+	// response := ExpenseResponse{
+	// 	ExpenseId:  id,
+	// 	AmountInCents: input.AmountInCents,
+	// 	Flash: app.getFlash(r.Context()),
+	// }
 
-	// Write the response struct to the response as JSON
-	err = encodeJSON(w, http.StatusOK, response)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
+	// // Write the response struct to the response as JSON
+	// err = encodeJSON(w, http.StatusCreated, response)
+	// if err != nil {
+	// 	app.serverError(w, err)
+	// 	return
+	// }
+	log.Printf("Expense successfully created: %d", id)
 }
 
 // update
@@ -228,7 +252,7 @@ func (app *application) expenseDelete(w http.ResponseWriter, r *http.Request) {
 	
 	// add the expense amount back to the budget
 	app.handleExpenseUpdate(w, userId, deletedExpense.ExpenseType, UpdateTypeAdd, deletedExpense.AmountInCents)
-	encodeJSON(w, http.StatusOK, "Deleted successfully!")
+	// encodeJSON(w, http.StatusOK, "Deleted successfully!")
 }
 
 func (app *application) handleExpenseUpdate(w http.ResponseWriter, userId, balanceType, updateType string, sumInCents int64) (*models.Budget, error) {

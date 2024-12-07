@@ -9,6 +9,7 @@ import (
 )
 
 func (app *application) routes() http.Handler {
+	log.Println("Routing...")
 	// Initialize the router.
 	router := httprouter.New()
 

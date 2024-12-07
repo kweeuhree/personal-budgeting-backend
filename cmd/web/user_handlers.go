@@ -21,9 +21,11 @@ type UserSignUpInput struct {
 }
 
 type UserResponse struct {
-	UserId  	string `json:"userId"`
-	Email 		string `json:"email"`
-	Flash 		string `json:"flash"`
+	UserId  	string 			`json:"userId"`
+	Email 		string 			`json:"email"`
+	DisplayName string			`json:"displayName"`
+	Budget		*BudgetResponse	`json:"budget"`
+	Flash 		string 			`json:"flash"`
 }
 
 type UserLoginInput struct {
@@ -65,9 +67,10 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		if errors.Is(err, models.ErrDuplicateEmail) {
-			form.AddFieldError("email", "Email address is already in use")
-			app.errorLog.Printf("Failed adding user to database: %s", err)
-			json.NewEncoder(w).Encode(form.FieldErrors)
+			encodeJSON(w, http.StatusConflict, map[string]interface{}{
+				"error": "Email already in use",
+				"field": "email",
+			})
 		} else {
 			app.serverError(w, err)
 		}
@@ -141,10 +144,37 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
 	app.setFlash(r.Context(), "Login successful!")
 
-	// Create response
+	userName, err := app.user.GetUserNameByUserId(id);
+	if err != nil {
+		fmt.Println("Error:", err)
+		userName = ""
+	}
+
+	var budget *models.Budget
+	budget, err = app.budget.GetBudgetByUserId(id)
+	if err != nil {
+		budget = nil
+	}
+
+	var returnbudget *BudgetResponse
+    if budget != nil {
+        returnbudget = &BudgetResponse{
+            BudgetId:       budget.BudgetId,
+            CheckingBalance: budget.CheckingBalance,
+            SavingsBalance:  budget.SavingsBalance,
+            BudgetTotal:     budget.BudgetTotal,
+            BudgetRemaining: budget.BudgetRemaining,
+            TotalSpent:      budget.TotalSpent,
+        }
+    } else {
+        returnbudget = nil 
+    }
+
 	response := UserResponse{
 		UserId:  id,
 		Email: form.Email,
+		DisplayName: userName,
+		Budget: returnbudget,
 		Flash: app.getFlash(r.Context()),
 	}
 
@@ -160,6 +190,13 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 // view specific user
 func (app *application) viewSpecificUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Attempting to view a specific user...")
+	userId := app.GetIdFromParams(r, "userId")
+	budget, err := app.budget.GetBudgetByUserId(userId)
+	if err != nil {
+		app.serverError(w, err)
+	}
+
+	encodeJSON(w, http.StatusOK, budget)
 }
 
 // logout the user
@@ -189,3 +226,4 @@ func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(w, "Logged out the user")
 }
+

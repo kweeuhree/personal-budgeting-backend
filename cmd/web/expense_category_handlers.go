@@ -28,13 +28,28 @@ type ExpenseCategoryResponse struct {
 
 // read all user categories
 func (app *application) categoriesView(w http.ResponseWriter, r *http.Request) {
-	exps, err := app.expenseCategory.All()
+	userId := app.sessionManager.Get(r.Context(), "authenticatedUserID").(string)
+	if userId == "" {
+		app.serverError(w, fmt.Errorf("userId not found in session"))
+		return
+	}
+
+	cats, err := app.expenseCategory.All(userId)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	encodeJSON(w, http.StatusOK, exps)
+    response := make([]ExpenseCategoryResponse, len(cats))
+    for i, cat := range cats {
+        response[i] = ExpenseCategoryResponse{
+            ExpenseCategoryId: cat.ExpenseCategoryId,
+            Name:              cat.Name,
+            Description:       cat.Description,
+        }
+    }
+
+	encodeJSON(w, http.StatusOK, response)
 }
 
 // read all expenses of a specific category
@@ -110,7 +125,7 @@ func (app *application) categoryCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the response struct to the response as JSON
-	err = encodeJSON(w, http.StatusOK, response)
+	err = encodeJSON(w, http.StatusCreated, response)
 	if err != nil {
 		app.serverError(w, err)
 		return

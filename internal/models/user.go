@@ -100,3 +100,20 @@ func (m *UserModel) Exists(userId string) (bool, error) {
 
 	return exists, err
 }
+
+// Find username based on UserId
+func (m *UserModel) GetUserNameByUserId(userId string) (string, error) {
+	fmt.Println("Attempting to get user name from database...")
+	stmt := `SELECT displayName 
+			FROM users WHERE userId = ?`
+	row := m.DB.QueryRow(stmt, userId)
+
+	var userName string
+	err := row.Scan(&userName)
+	if err == sql.ErrNoRows {
+		return "", fmt.Errorf("no user found with userId: %s", userId)
+	}
+	
+	fmt.Println(userName)
+	return userName, nil
+}

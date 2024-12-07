@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 )
@@ -67,12 +68,13 @@ func (m *ExpenseModel) Get(expenseId string) (*Expense, error) {
 }
 
 // return the all created Expenses
-func (m *ExpenseModel) All() ([]*Expense, error) {
+func (m *ExpenseModel) All(userId string) ([]*Expense, error) {
 	stmt := `SELECT * FROM Expenses
+			WHERE userId = ?
 			ORDER BY createdAt DESC`
 
 	// This returns a sql.Rows resultset containing the result of query
-	rows, err := m.DB.Query(stmt)
+	rows, err := m.DB.Query(stmt, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -159,5 +161,32 @@ func (m *ExpenseModel) Delete(expenseId, userId string) error {
 	}
 
 	log.Printf("Deleted successfully")
+	return nil
+}
+
+func (m *ExpenseModel) DeleteAll(userId string) error {
+	stmt := `DELETE FROM Expenses
+			WHERE userId = ?`
+	
+	result, err := m.DB.Exec(stmt, userId);
+	if err != nil {
+		log.Printf("Failed to delete expenses for user %s: %v", userId, err)
+		return fmt.Errorf("could not delete expenses: %w", err)
+	}
+
+	// Check if the record was actually deleted
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Error while checking rows affected: %s", err)
+		return err
+	}
+	
+	if rowsAffected == 0 {
+		// No rows were affected, meaning the ID might not exist
+		log.Printf("No rows affected, possible non-existent ID: %s", userId)
+		return nil
+	}
+	
+	log.Printf("Successfully deleted %d expenses for user %s", rowsAffected, userId)
 	return nil
 }

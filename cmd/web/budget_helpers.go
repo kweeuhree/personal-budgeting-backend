@@ -31,22 +31,25 @@ func (app *application) CalculateUpdates(
 
     // Adjust checking or savings balance based on balance type
     if balanceType == BalanceTypeChecking {
-        updatedBudget.CheckingBalance = app.updateBalance(updatedBudget.CheckingBalance, sumInCents, updateType)
+        newCheckingBalance := app.updateBalance(updatedBudget.CheckingBalance, sumInCents, updateType)
+        updatedBudget.CheckingBalance = newCheckingBalance
     } else if balanceType == BalanceTypeSavings {
-        updatedBudget.SavingsBalance = app.updateBalance(updatedBudget.SavingsBalance, sumInCents, updateType)
+        newSavingsBalance := app.updateBalance(updatedBudget.SavingsBalance, sumInCents, updateType)
+        updatedBudget.SavingsBalance = newSavingsBalance
     }
 
-    // Calculate new budget remaining
     newBudgetRemaining := updatedBudget.CheckingBalance + updatedBudget.SavingsBalance
+    newTotalSpent := updatedBudget.TotalSpent
 
-    // Calculate new budget total and total spent
-    var newBudgetTotal, newTotalSpent int64
+    var newBudgetTotal int64    
+
     switch updateType {
     case UpdateTypeAdd:
         newBudgetTotal = updatedBudget.BudgetTotal + sumInCents
         if isExpense {
             newTotalSpent = updatedBudget.TotalSpent - sumInCents
         }
+
     case UpdateTypeSubtract:
         newBudgetTotal = updatedBudget.BudgetTotal - sumInCents
         if isExpense {

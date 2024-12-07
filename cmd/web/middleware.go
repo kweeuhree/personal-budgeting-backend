@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -24,12 +26,13 @@ func secureHeaders(next http.Handler) http.Handler {
 	reactAddress := os.Getenv("REACT_ADDRESS")
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		
+		logRequestBody(r)
 		 // Handle OPTIONS requests for CORS preflight
 		if r.Method == http.MethodOptions {
+			
             w.Header().Set("Access-Control-Allow-Origin", reactAddress)
             w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-            w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
             w.Header().Set("Access-Control-Allow-Credentials", "true") // Allow credentials (cookies)
             w.WriteHeader(http.StatusOK) // Respond with HTTP 200 OK for preflight
             return
@@ -42,7 +45,7 @@ func secureHeaders(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 
 		// Allow specific headers
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; style-src 'self' fonts.googleapis.com; font-src fonts.gstatic.com")
 		w.Header().Set("Referrer-Policy", "origin-when-cross-origin")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -185,4 +188,27 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 		}()
 		next.ServeHTTP(w, r)
 	})
+}
+
+func logRequestBody(r *http.Request) {
+    if r.Body == nil {
+        log.Println("Request body is empty")
+        return
+    }
+
+	log.Println("Method:", r.Method)
+	log.Println("Headers:", r.Header)
+
+    // Read the body
+    bodyBytes, err := io.ReadAll(r.Body)
+    if err != nil {
+        log.Printf("Error reading request body: %v", err)
+        return
+    }
+
+    // Log the body content
+    log.Printf("Received request body: %s", string(bodyBytes))
+
+    // Reset the body for further processing
+    r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 }
