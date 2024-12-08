@@ -30,6 +30,22 @@ func (app *application) CurrentBudgetIsValid(userId, balanceType string, sumInCe
     return nil
 }
 
+func (app *application) CalculateAndUpdateBudget(
+    userId, updateType, balanceType string, sumInCents int64, isExpense bool,
+ ) error {
+
+    // add the expense amount back to the budget
+	budgetId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateBudgetUpdates(userId, updateType, balanceType, sumInCents, true)
+	if err != nil {
+		return err
+	}
+    
+    // Update the budget in the database
+	app.UpdateBudgetInDB(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
+
+	return nil
+}
+
 func (app *application) CalculateBudgetUpdates(
    userId, updateType, balanceType string, sumInCents int64, isExpense bool,
 ) (string, int64, int64, int64, int64, int64, error) {
