@@ -12,6 +12,7 @@ type ExpenseCategory struct {
 	UserId    	   		   string
 	Name	     		   string
 	Description    		   string
+	TotalSum 			   int64
 }
 
 // define a ExpenseCategory model type which wraps a sql.DB connection pool
@@ -20,13 +21,13 @@ type ExpenseCategoryModel struct {
 }
 
 // insert a new ExpenseCategory into the database
-func (m *ExpenseCategoryModel) Insert(expenseCategoryId, userId, name, description string) (string, error) {
+func (m *ExpenseCategoryModel) Insert(expenseCategoryId, userId, name, description string, totalSum int64) (string, error) {
 	// use placeholder parameters instead of interpolating data in the SQL query
 	// as this is untrusted user input from a form
-	stmt := `INSERT INTO ExpenseCategory (expenseCategoryId, userId, name, description) 	
+	stmt := `INSERT INTO ExpenseCategory (expenseCategoryId, userId, name, description, totalSum) 	
 			VALUES(?, ?, ?, ?)`
 
-	_, err := m.DB.Exec(stmt, expenseCategoryId, userId, name, description)
+	_, err := m.DB.Exec(stmt, expenseCategoryId, userId, name, description, totalSum)
 	if err != nil {
 		return "", err
 	}
@@ -37,7 +38,7 @@ func (m *ExpenseCategoryModel) Insert(expenseCategoryId, userId, name, descripti
 
 // return a specific expenseCategory based on its id
 func (m *ExpenseCategoryModel) Get(expenseCategoryId string) (*ExpenseCategory, error) {
-	stmt := `SELECT expenseCategoryId, userId, name, description 
+	stmt := `SELECT expenseCategoryId, userId, name, description, totalSum, 
 			FROM ExpenseCategory WHERE expenseCategoryId = ?`
 
 	// This returns a pointer to a sql.Row object
@@ -50,7 +51,7 @@ func (m *ExpenseCategoryModel) Get(expenseCategoryId string) (*ExpenseCategory, 
 	// Use row.Scan() to copy the values from each field in sql.Row to the
 	// corresponding field in the ExpenseCategory struct.
 	// The arguments to row.Scan are *pointers* to the place to copy the data into
-	err := row.Scan(&exp.ExpenseCategoryId, &exp.UserId, &exp.Name, &exp.Description)
+	err := row.Scan(&exp.ExpenseCategoryId, &exp.UserId, &exp.Name, &exp.Description, &exp.TotalSum)
 	if err != nil {
 		// If the query returns no rows, then row.Scan() will return a
 		// sql.ErrNoRows error
@@ -95,7 +96,7 @@ func (m *ExpenseCategoryModel) All(userId string) ([]*ExpenseCategory, error) {
 		exp := &ExpenseCategory{}
 		// Use rows.Scan() to copy the values from each field in the row to
 		// the new ExpenseCategory object
-		err = rows.Scan(&exp.ExpenseCategoryId, &exp.UserId, &exp.Name, &exp.Description)
+		err = rows.Scan(&exp.ExpenseCategoryId, &exp.UserId, &exp.Name, &exp.Description, &exp.TotalSum)
 		if err != nil {
 			return nil, err
 		}
@@ -206,4 +207,50 @@ func (m *ExpenseCategoryModel) Delete(expenseCategoryId, userId string) error {
 
 	log.Printf("Deleted successfully")
 	return nil
+}
+
+func (m *ExpenseCategoryModel) PutTotalSum(userId, categoryId string, amount int64) error {
+	stmt := `UPDATE ExpenseCategory 
+			SET totalSum = ? 
+			WHERE expenseCategoryId = ? and
+			userId = ?`
+
+	// Execute the statement
+	_, err := m.DB.Exec(stmt, amount, categoryId, userId)
+	if err != nil {
+		log.Printf("Error while attempting updating ExpenseCategory total sum %s", err)
+		return err
+	}
+
+	log.Printf("Updated successfully")
+	return nil
+}
+
+	// return a specific expenseCategory based on its id
+func (m *ExpenseCategoryModel) GetCategoryTotalSum(userId, expenseCategoryId string) (int64, error) {
+	stmt := `SELECT totalSum 
+			FROM ExpenseCategory 
+			WHERE userId = ? and expenseCategoryId = ?`
+
+	// This returns a pointer to a sql.Row object
+	// which holds the result from the database
+	row := m.DB.QueryRow(stmt, userId, expenseCategoryId)
+
+	var totalSum int64
+
+	// Use row.Scan() to copy the values from each field in sql.Row to the
+	// corresponding field in the ExpenseCategory struct.
+	// The arguments to row.Scan are *pointers* to the place to copy the data into
+	err := row.Scan(&totalSum)
+	if err != nil {
+		// If the query returns no rows, then row.Scan() will return a
+		// sql.ErrNoRows error
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrNoRecord
+		} else {
+			return 0, err
+		}
+	}
+	// If everything went OK then return the totalSum
+	return totalSum, nil
 }
