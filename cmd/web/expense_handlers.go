@@ -50,7 +50,7 @@ func (app *application) expensesView(w http.ResponseWriter, r *http.Request) {
 	for i, exp := range exps {
 		response[i] = ExpenseResponse{
 			ExpenseId: exp.ExpenseId,
-			CategoryId: exp.CategoryId,
+			CategoryId: &exp.CategoryId,
 			AmountInCents: exp.AmountInCents,
 			Description: exp.Description,
 			ExpenseType: exp.ExpenseType,
@@ -127,15 +127,18 @@ func (app *application) expenseCreate(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, fmt.Errorf("unable to add an expense %d; %s", input.AmountInCents, err))
 		return
 	}
-
-	budgetId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateBudgetUpdates(userId, UpdateTypeSubtract, input.ExpenseType, input.AmountInCents, true)
+	// Update the budget in the database
+	err = app.CalculateAndUpdateBudget(userId, UpdateTypeSubtract, input.ExpenseType, input.AmountInCents, true)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	 // Update the budget in the database
-	 app.UpdateBudgetInDB(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
+	err = app.UpdateCategoryExpenses(userId, input.CategoryId, Increment, input.AmountInCents)
+	if err != nil {
+		app.serverError(w, fmt.Errorf("unable to increment category expenses %d; %s", input.AmountInCents, err))
+		return
+	}
 
     app.setFlash(r.Context(), "Expense has been created.")
 
@@ -263,16 +266,19 @@ func (app *application) expenseDelete(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	} 
-	
 	// add the expense amount back to the budget
-	budgetId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateBudgetUpdates(userId, UpdateTypeAdd, deletedExpense.ExpenseType, deletedExpense.AmountInCents, true)
+	err = app.CalculateAndUpdateBudget(userId, UpdateTypeAdd, deletedExpense.ExpenseType, deletedExpense.AmountInCents, true)
 	if err != nil {
-		app.serverError(w, err)
+		app.serverError(w, fmt.Errorf("unable to increment category expenses %d; %s", deletedExpense.AmountInCents, err))
 		return
 	}
-
-	 // Update the budget in the database
-	 app.UpdateBudgetInDB(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
-	 
+	
+	// Update relevant category expenses
+	err = app.UpdateCategoryExpenses(userId, deletedExpense.CategoryId, Decrement, deletedExpense.AmountInCents)
+	if err != nil {
+		app.serverError(w, fmt.Errorf("unable to increment category expenses %d; %s", deletedExpense.AmountInCents, err))
+		return
+	}
+	
 	encodeJSON(w, http.StatusOK, "Deleted successfully!")
 }
