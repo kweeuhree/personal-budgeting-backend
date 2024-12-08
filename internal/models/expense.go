@@ -12,7 +12,7 @@ import (
 type Expense struct {
 	ExpenseId      string
 	UserId    	   string
-	CategoryId     *string
+	CategoryId     string
 	Description    string
 	ExpenseType	   string
 	AmountInCents  int64
