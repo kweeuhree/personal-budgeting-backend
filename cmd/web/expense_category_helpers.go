@@ -22,7 +22,7 @@ func (app *application) UpdateCategoryExpenses(userId, categoryId, updateType st
 		return err
 	}
 
-	log.Printf("Incremented successfully")
+	log.Printf("Updated successfully")
 	return nil
 }
 
