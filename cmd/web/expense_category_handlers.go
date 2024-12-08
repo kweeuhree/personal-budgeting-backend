@@ -23,6 +23,7 @@ type ExpenseCategoryResponse struct {
 	ExpenseCategoryId    string `json:"expenseCategoryId"`
 	Name  				 string `json:"name"`
 	Description 		 string `json:"description"`
+	TotalSum 			 int64  `json:"totalSum"`
 	Flash 				 string `json:"flash"`
 }
 
@@ -46,6 +47,7 @@ func (app *application) categoriesView(w http.ResponseWriter, r *http.Request) {
             ExpenseCategoryId: cat.ExpenseCategoryId,
             Name:              cat.Name,
             Description:       cat.Description,
+			TotalSum: 		   cat.TotalSum,
         }
     }
 
@@ -108,7 +110,7 @@ func (app *application) categoryCreate(w http.ResponseWriter, r *http.Request) {
 	newId := uuid.New().String()
 
 	// Insert the new ExpenseCategory using the ID and body
-	newExpenseCategoryId, err := app.expenseCategory.Insert(newId, userId, input.Name, input.Description)
+	newExpenseCategoryId, err := app.expenseCategory.Insert(newId, userId, input.Name, input.Description, 0)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -121,6 +123,7 @@ func (app *application) categoryCreate(w http.ResponseWriter, r *http.Request) {
 		ExpenseCategoryId: newExpenseCategoryId,
 		Name: input.Name,
 		Description: input.Description,
+		TotalSum: 0,
 		Flash: app.getFlash(r.Context()),
 	}
 
