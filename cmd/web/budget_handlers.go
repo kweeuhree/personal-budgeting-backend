@@ -13,45 +13,45 @@ import (
 
 // Input struct for creating budgets
 type BudgetInput struct {
-	CheckingBalance 	int64 `json:"checkingBalance"`
-	SavingsBalance 		int64 `json:"savingsBalance"`
+	CheckingBalance int64 `json:"checkingBalance"`
+	SavingsBalance  int64 `json:"savingsBalance"`
 	validator.Validator
 }
 
 // Input struct for updating budgets
 type BudgetUpdate struct {
-	UpdateSumInCents 	int64  `json:"updateSumInCents"`
-	BalanceType 		string `json:"balanceType"`
-	UpdateType			string `json:"updateType"`
+	UpdateSumInCents int64  `json:"updateSumInCents"`
+	BalanceType      string `json:"balanceType"`
+	UpdateType       string `json:"updateType"`
 	validator.Validator
 }
 
 // // Response struct for returning budget data
 type BudgetResponse struct {
-	BudgetId    		string 	`json:"budgetId"`
-	CheckingBalance  	int64 	`json:"checkingBalance"`
-	SavingsBalance 		int64 	`json:"savingsBalance"`
-	BudgetTotal 		int64 	`json:"budgetTotal"`
-	BudgetRemaining 	int64 	`json:"budgetRemaining"`
-	TotalSpent 			int64 	`json:"totalSpent"`
-	UpdatedAt			string	`json:"updatedAt"`
-	Flash 				string 	`json:"flash"`
+	BudgetId        string `json:"budgetId"`
+	CheckingBalance int64  `json:"checkingBalance"`
+	SavingsBalance  int64  `json:"savingsBalance"`
+	BudgetTotal     int64  `json:"budgetTotal"`
+	BudgetRemaining int64  `json:"budgetRemaining"`
+	TotalSpent      int64  `json:"totalSpent"`
+	UpdatedAt       string `json:"updatedAt"`
+	Flash           string `json:"flash"`
 }
 
 type BudgetUpdateResponse struct {
-	Balance 	int64 `json:"checkingBalance"`
-	SavingsBalance 		int64 `json:"savingsBalance"`
-	Flash				string 	`json:"flash"`
+	Balance        int64  `json:"checkingBalance"`
+	SavingsBalance int64  `json:"savingsBalance"`
+	Flash          string `json:"flash"`
 }
 
 const (
-    BalanceTypeChecking = "CheckingBalance"
-    BalanceTypeSavings  = "SavingsBalance"
+	BalanceTypeChecking = "checkingBalance"
+	BalanceTypeSavings  = "savingsBalance"
 )
 
 const (
-    UpdateTypeAdd = "add"
-    UpdateTypeSubtract  = "subtract"
+	UpdateTypeAdd      = "add"
+	UpdateTypeSubtract = "subtract"
 )
 
 // read
@@ -76,13 +76,13 @@ func (app *application) budgetView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := &BudgetResponse{
-		BudgetId: budgetId,
+		BudgetId:        budgetId,
 		CheckingBalance: budget.CheckingBalance,
-		SavingsBalance: budget.SavingsBalance,
-		BudgetTotal: budget.BudgetTotal,
+		SavingsBalance:  budget.SavingsBalance,
+		BudgetTotal:     budget.BudgetTotal,
 		BudgetRemaining: budget.BudgetRemaining,
-		TotalSpent: budget.TotalSpent,
-		UpdatedAt: budget.UpdatedAt.GoString(),
+		TotalSpent:      budget.TotalSpent,
+		UpdatedAt:       budget.UpdatedAt.GoString(),
 	}
 
 	encodeJSON(w, http.StatusOK, response)
@@ -130,11 +130,11 @@ func (app *application) budgetCreate(w http.ResponseWriter, r *http.Request) {
 	app.setFlash(r.Context(), "Budget has been created.")
 
 	response := BudgetResponse{
-		BudgetId:    id,
-		CheckingBalance:  input.CheckingBalance,
-		SavingsBalance: input.SavingsBalance,
-		BudgetTotal: budgetTotal,
-		Flash: app.getFlash(r.Context()),
+		BudgetId:        id,
+		CheckingBalance: input.CheckingBalance,
+		SavingsBalance:  input.SavingsBalance,
+		BudgetTotal:     budgetTotal,
+		Flash:           app.getFlash(r.Context()),
 	}
 
 	err = encodeJSON(w, http.StatusCreated, response)
@@ -178,10 +178,10 @@ func (app *application) budgetUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if updateType is Subtract, validate the input, otherwise just update the budget
-	if ( input.UpdateType == UpdateTypeSubtract) {
+	if input.UpdateType == UpdateTypeSubtract {
 		// validate the input against existing balance
 		err = app.CurrentBudgetIsValid(userId, input.BalanceType, input.UpdateSumInCents)
-		
+
 		if err != nil {
 			app.serverError(w, fmt.Errorf("failed to update current budget: %v", err))
 			return
@@ -189,22 +189,22 @@ func (app *application) budgetUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updatedBudget, err := app.handleBudgetUpdate(userId, input.BalanceType, input.UpdateType, input.UpdateSumInCents)
-    if err != nil {
+	if err != nil {
 		app.serverError(w, fmt.Errorf("failed to update current budget: %v", err))
 		return
-    }
+	}
 
 	app.setFlash(r.Context(), "Budget has been updated.")
 
 	response := &BudgetResponse{
-		BudgetId: budgetId,
+		BudgetId:        budgetId,
 		CheckingBalance: updatedBudget.CheckingBalance,
-		SavingsBalance: updatedBudget.SavingsBalance,
-		BudgetTotal: updatedBudget.BudgetTotal,
+		SavingsBalance:  updatedBudget.SavingsBalance,
+		BudgetTotal:     updatedBudget.BudgetTotal,
 		BudgetRemaining: updatedBudget.BudgetRemaining,
-		TotalSpent: updatedBudget.TotalSpent,
-		UpdatedAt: updatedBudget.UpdatedAt.GoString(),
-		Flash: app.getFlash(r.Context()),
+		TotalSpent:      updatedBudget.TotalSpent,
+		UpdatedAt:       updatedBudget.UpdatedAt.GoString(),
+		Flash:           app.getFlash(r.Context()),
 	}
 
 	err = encodeJSON(w, http.StatusCreated, response)
@@ -215,29 +215,29 @@ func (app *application) budgetUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) handleBudgetUpdate(
-    userId, balanceType, updateType string, 
-    sumInCents int64, 
+	userId, balanceType, updateType string,
+	sumInCents int64,
 ) (*models.Budget, error) {
 
-    budgetId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateBudgetUpdates(userId, updateType, balanceType, sumInCents, false)
-    if err != nil {
-        return nil, err
-    }
+	budgetId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateBudgetUpdates(userId, updateType, balanceType, sumInCents, false)
+	if err != nil {
+		return nil, err
+	}
 
-    // Update the budget in the database
-    app.UpdateBudgetInDB(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
+	// Update the budget in the database
+	app.UpdateBudgetInDB(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
 
-    // Create the updated budget model
-    updatedBudget := &models.Budget{
-        BudgetId:        budgetId,
-        CheckingBalance: checkingBalance,
-        SavingsBalance:  savingsBalance,
-        BudgetTotal:     budgetTotal,
-        BudgetRemaining: budgetRemaining,
-        TotalSpent:      totalSpent,
-    }
+	// Create the updated budget model
+	updatedBudget := &models.Budget{
+		BudgetId:        budgetId,
+		CheckingBalance: checkingBalance,
+		SavingsBalance:  savingsBalance,
+		BudgetTotal:     budgetTotal,
+		BudgetRemaining: budgetRemaining,
+		TotalSpent:      totalSpent,
+	}
 
-    return updatedBudget, nil
+	return updatedBudget, nil
 }
 
 // update the budget in the database
@@ -264,7 +264,7 @@ func (app *application) budgetDelete(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 		return
 	}
-	
+
 	// Delete the budget using the ID
 	err := app.budget.Delete(budgetId, userId)
 	if err != nil {
@@ -272,12 +272,19 @@ func (app *application) budgetDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Delete all expenses assosiated with that user
+	// Delete all expenses associated with that user
 	err = app.expenses.DeleteAll(userId)
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
-	
+
+	// Void all expense categories totalSums
+	err = app.expenseCategory.VoidAllTotalSums(userId)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
 	encodeJSON(w, http.StatusOK, "Deleted successfully!")
 }
