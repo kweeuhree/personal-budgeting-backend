@@ -10,7 +10,7 @@ const (
 func (app *application) UpdateCategoryExpenses(userId, categoryId, updateType string, amount int64) error {
 
 	currentTotalSum, err := app.expenseCategory.GetCategoryTotalSum(userId, categoryId)
-	
+
 	if err != nil {
 		return err
 	}
@@ -29,14 +29,14 @@ func (app *application) UpdateCategoryExpenses(userId, categoryId, updateType st
 func (app *application) calculateTotalSum(currentTotalSum, amount int64, updateType string) int64 {
 	var total int64
 	switch updateType {
-    case Increment:
-        total = currentTotalSum + amount
-    case Decrement:
-        total = currentTotalSum - amount
+	case Increment:
+		total = currentTotalSum + amount
+	case Decrement:
+		total = currentTotalSum - amount
 		if total < 0 {
 			total = 0
 		}
-    }
+	}
 
 	return total
 }
