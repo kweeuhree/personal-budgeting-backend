@@ -8,11 +8,11 @@ import (
 
 // define a ExpenseCategory type
 type ExpenseCategory struct {
-	ExpenseCategoryId      string
-	UserId    	   		   string
-	Name	     		   string
-	Description    		   string
-	TotalSum 			   int64
+	ExpenseCategoryId string
+	UserId            string
+	Name              string
+	Description       string
+	TotalSum          int64
 }
 
 // define a ExpenseCategory model type which wraps a sql.DB connection pool
@@ -25,7 +25,7 @@ func (m *ExpenseCategoryModel) Insert(expenseCategoryId, userId, name, descripti
 	// use placeholder parameters instead of interpolating data in the SQL query
 	// as this is untrusted user input from a form
 	stmt := `INSERT INTO ExpenseCategory (expenseCategoryId, userId, name, description, totalSum) 	
-			VALUES(?, ?, ?, ?)`
+			VALUES(?, ?, ?, ?, ?)`
 
 	_, err := m.DB.Exec(stmt, expenseCategoryId, userId, name, description, totalSum)
 	if err != nil {
@@ -34,7 +34,6 @@ func (m *ExpenseCategoryModel) Insert(expenseCategoryId, userId, name, descripti
 
 	return expenseCategoryId, nil
 }
-
 
 // return a specific expenseCategory based on its id
 func (m *ExpenseCategoryModel) Get(expenseCategoryId string) (*ExpenseCategory, error) {
@@ -226,7 +225,7 @@ func (m *ExpenseCategoryModel) PutTotalSum(userId, categoryId string, amount int
 	return nil
 }
 
-	// return a specific expenseCategory based on its id
+// return a specific expenseCategory based on its id
 func (m *ExpenseCategoryModel) GetCategoryTotalSum(userId, expenseCategoryId string) (int64, error) {
 	stmt := `SELECT totalSum 
 			FROM ExpenseCategory 
@@ -253,4 +252,21 @@ func (m *ExpenseCategoryModel) GetCategoryTotalSum(userId, expenseCategoryId str
 	}
 	// If everything went OK then return the totalSum
 	return totalSum, nil
+}
+
+// Void all expense categories totalSums upon resetting user budget
+func (m *ExpenseCategoryModel) VoidAllTotalSums(userId string) error {
+	stmt := `UPDATE ExpenseCategory 
+			SET totalSum = 0 
+			WHERE userId = ?`
+
+	// Execute the statement
+	_, err := m.DB.Exec(stmt, userId)
+	if err != nil {
+		log.Printf("Error while attempting voiding ExpenseCategory totalSums %s", err)
+		return err
+	}
+
+	log.Printf("Voided successfully")
+	return nil
 }
