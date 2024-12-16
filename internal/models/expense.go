@@ -10,13 +10,13 @@ import (
 
 // define a Expense type
 type Expense struct {
-	ExpenseId      string
-	UserId    	   string
-	CategoryId     string
-	Description    string
-	ExpenseType	   string
-	AmountInCents  int64
-	CreatedAt      time.Time
+	ExpenseId     string
+	UserId        string
+	CategoryId    string
+	Description   string
+	ExpenseType   string
+	AmountInCents int64
+	CreatedAt     time.Time
 }
 
 // define a Expense model type which wraps a sql.DB connection pool
@@ -51,7 +51,7 @@ func (m *ExpenseModel) Get(expenseId string) (*Expense, error) {
 	exp := &Expense{}
 
 	// Use row.Scan() to copy the values from each field in sql.Row to the
-	// corresponding field in the expense struct. 
+	// corresponding field in the expense struct.
 	// The arguments to row.Scan are *pointers* to the place to copy the data into
 	err := row.Scan(&exp.ExpenseId, &exp.UserId, &exp.CategoryId, &exp.Description, &exp.ExpenseType, &exp.AmountInCents, &exp.CreatedAt)
 	if err != nil {
@@ -96,8 +96,8 @@ func (m *ExpenseModel) All(userId string) ([]*Expense, error) {
 	for rows.Next() {
 		// Create a pointer to a new zeroed Expense struct
 		exp := &Expense{}
-		// Use rows.Scan() to copy the values from each field in the row, 
-		// the arguments to row.Scan() must be pointers 
+		// Use rows.Scan() to copy the values from each field in the row,
+		// the arguments to row.Scan() must be pointers
 		err = rows.Scan(&exp.ExpenseId, &exp.UserId, &exp.CategoryId, &exp.Description, &exp.ExpenseType, &exp.AmountInCents, &exp.CreatedAt)
 		if err != nil {
 			return nil, err
@@ -167,8 +167,8 @@ func (m *ExpenseModel) Delete(expenseId, userId string) error {
 func (m *ExpenseModel) DeleteAll(userId string) error {
 	stmt := `DELETE FROM Expenses
 			WHERE userId = ?`
-	
-	result, err := m.DB.Exec(stmt, userId);
+
+	result, err := m.DB.Exec(stmt, userId)
 	if err != nil {
 		log.Printf("Failed to delete expenses for user %s: %v", userId, err)
 		return fmt.Errorf("could not delete expenses: %w", err)
@@ -180,13 +180,40 @@ func (m *ExpenseModel) DeleteAll(userId string) error {
 		log.Printf("Error while checking rows affected: %s", err)
 		return err
 	}
-	
+
 	if rowsAffected == 0 {
 		// No rows were affected, meaning the ID might not exist
 		log.Printf("No rows affected, possible non-existent ID: %s", userId)
 		return nil
 	}
-	
+
+	log.Printf("Successfully deleted %d expenses for user %s", rowsAffected, userId)
+	return nil
+}
+
+func (m *ExpenseModel) DeleteAllByCategory(userId, expenseCategoryId string) error {
+	stmt := `DELETE FROM Expenses
+			WHERE userId = ? and categoryId = ?`
+
+	result, err := m.DB.Exec(stmt, userId, expenseCategoryId)
+	if err != nil {
+		log.Printf("Failed to delete expenses for user %s: %v", userId, err)
+		return fmt.Errorf("could not delete expenses: %w", err)
+	}
+
+	// Check if the record was actually deleted
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Error while checking rows affected: %s", err)
+		return err
+	}
+
+	if rowsAffected == 0 {
+		// No rows were affected, meaning the ID might not exist
+		log.Printf("No rows affected, possible non-existent ID: %s", userId)
+		return nil
+	}
+
 	log.Printf("Successfully deleted %d expenses for user %s", rowsAffected, userId)
 	return nil
 }
