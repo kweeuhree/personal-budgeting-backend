@@ -27,18 +27,18 @@ func secureHeaders(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logRequestBody(r)
-		 // Handle OPTIONS requests for CORS preflight
+		// Handle OPTIONS requests for CORS preflight
+
 		if r.Method == http.MethodOptions {
-			
-            w.Header().Set("Access-Control-Allow-Origin", reactAddress)
-            w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-            w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
-            w.Header().Set("Access-Control-Allow-Credentials", "true") // Allow credentials (cookies)
-            w.WriteHeader(http.StatusOK) // Respond with HTTP 200 OK for preflight
-            return
-        }
+
+			w.Header().Set("Access-Control-Allow-Origin", reactAddress)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
+			w.Header().Set("Access-Control-Allow-Credentials", "true") // Allow credentials (cookies)
+			w.WriteHeader(http.StatusOK)                               // Respond with HTTP 200 OK for preflight
+			return
+		}
 		// Specify origin
-		// w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Origin", reactAddress)
 
 		// Allow specific HTTP methods
@@ -191,24 +191,24 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 }
 
 func logRequestBody(r *http.Request) {
-    if r.Body == nil {
-        log.Println("Request body is empty")
-        return
-    }
+	if r.Body == nil {
+		log.Println("Request body is empty")
+		return
+	}
 
 	log.Println("Method:", r.Method)
 	log.Println("Headers:", r.Header)
 
-    // Read the body
-    bodyBytes, err := io.ReadAll(r.Body)
-    if err != nil {
-        log.Printf("Error reading request body: %v", err)
-        return
-    }
+	// Read the body
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading request body: %v", err)
+		return
+	}
 
-    // Log the body content
-    log.Printf("Received request body: %s", string(bodyBytes))
+	// Log the body content
+	log.Printf("Received request body: %s", string(bodyBytes))
 
-    // Reset the body for further processing
-    r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	// Reset the body for further processing
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 }

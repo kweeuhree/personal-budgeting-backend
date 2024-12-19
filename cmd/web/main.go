@@ -7,34 +7,38 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 
-	// models
+	"github.com/joho/godotenv"
 	"kweeuhree.personal-budgeting-backend/internal/models"
 
+	// models
+
 	// environment variables
-	"github.com/joho/godotenv"
 
 	// we need the driver’s init() function to run so that it can register itself with the
 	// database/sql package. The trick to getting around this is to alias the package name
 	// to the blank identifier. This is standard practice for most of Go’s SQL drivers
-	_ "github.com/go-sql-driver/mysql" // with underscore
 
 	"github.com/alexedwards/scs/mysqlstore"
 	"github.com/alexedwards/scs/v2"
+	_ "github.com/go-sql-driver/mysql"
 )
+
+// with underscore
 
 // Define an application struct to hold the application-wide dependencies for
 // the web application.
 type application struct {
-	errorLog       		*log.Logger
-	infoLog        		*log.Logger
-	user          		*models.UserModel
-	budget          	*models.BudgetModel
-	expenses          	*models.ExpenseModel
-	expenseCategory     *models.ExpenseCategoryModel
-	sessionManager 		*scs.SessionManager
+	errorLog        *log.Logger
+	infoLog         *log.Logger
+	user            *models.UserModel
+	budget          *models.BudgetModel
+	expenses        *models.ExpenseModel
+	expenseCategory *models.ExpenseCategoryModel
+	sessionManager  *scs.SessionManager
 }
 
 func main() {
@@ -83,13 +87,13 @@ func main() {
 	sessionManager.Lifetime = 12 * time.Hour
 
 	app := &application{
-		errorLog:       errorLog,
-		infoLog:        infoLog,
-		user:           &models.UserModel{DB: db},
-		budget:         &models.BudgetModel{DB: db},
-		expenses:       &models.ExpenseModel{DB: db},
-		expenseCategory:&models.ExpenseCategoryModel{DB: db},
-		sessionManager: sessionManager,
+		errorLog:        errorLog,
+		infoLog:         infoLog,
+		user:            &models.UserModel{DB: db},
+		budget:          &models.BudgetModel{DB: db},
+		expenses:        &models.ExpenseModel{DB: db},
+		expenseCategory: &models.ExpenseCategoryModel{DB: db},
+		sessionManager:  sessionManager,
 	}
 
 	// Initialize a tls.Config struct to hold the non-default TLS settings we
