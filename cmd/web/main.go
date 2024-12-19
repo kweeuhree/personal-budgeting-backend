@@ -11,7 +11,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	"kweeuhree.personal-budgeting-backend/internal/models"
 
 	// models
@@ -43,10 +42,10 @@ type application struct {
 
 func main() {
 	// Load environment variables from the .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatalf("Error loading .env file: %v", err)
+	// }
 
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
