@@ -58,7 +58,7 @@ func main() {
 	dsn := flag.String("dsn", DSNstring, "MySQL data source name")
 	addr := os.Getenv("PORT")
 	if addr == "" {
-		addr = "4000" // default port
+		addr = "23047" // default port
 	}
 	// addr := flag.String("addr", ":4000", "HTTP network address")
 
