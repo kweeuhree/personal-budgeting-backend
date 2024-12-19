@@ -48,7 +48,7 @@ func main() {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
-	caAivenCert := os.Getenv("CA_AIVEN_CERT")
+	caAivenCert := "./tls/ca.pem"
 	// DSN string with loaded env variables
 	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=true", dbUser, dbPassword, dbHost, dbPort, dbName)
 
