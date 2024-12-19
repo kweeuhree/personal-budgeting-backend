@@ -46,13 +46,13 @@ func main() {
 	// if err != nil {
 	// 	log.Fatalf("Error loading .env file: %v", err)
 	// }
-
+	dbHost := os.Getenv("DB_HOST")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 
 	// DSN string with loaded env variables
-	DSNstring := fmt.Sprintf("%s:%s@/%s?parseTime=true", dbUser, dbPassword, dbName)
+	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbName)
 
 	// define  new command-line flag for the mysql dsn string
 	dsn := flag.String("dsn", DSNstring, "MySQL data source name")
