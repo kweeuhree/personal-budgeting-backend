@@ -114,7 +114,7 @@ func main() {
 	}
 	log.Println("Starting server...")
 	srv := &http.Server{
-		Addr:      ":" + addr,
+		// Addr:      ":" + addr,
 		ErrorLog:  errorLog,
 		Handler:   app.routes(),
 		TLSConfig: tlsConfig,
