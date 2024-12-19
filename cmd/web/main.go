@@ -48,7 +48,9 @@ func main() {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
-	caAivenCert := "./tls/ca.pem"
+	caAivenCert := "/etc/secrets/ca.pem"
+	log.Printf("Using CA certificate path: %s", caAivenCert)
+
 	// DSN string with loaded env variables
 	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=true", dbUser, dbPassword, dbHost, dbPort, dbName)
 
@@ -75,7 +77,7 @@ func main() {
 	rootCertPool := x509.NewCertPool()
 	pem, err := os.ReadFile(caAivenCert)
 	if err != nil {
-		errorLog.Fatal(err)
+		errorLog.Fatalf("Failed to read CA certificate: %v", err)
 	}
 	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
 		errorLog.Fatal("Failed to append PEM.")
