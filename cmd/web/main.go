@@ -48,11 +48,11 @@ func main() {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
-	caAivenCert := "/etc/secrets/ca.pem"
+	caAivenCert := os.Getenv("CA_AIVEN_CERT")
 	log.Printf("Using CA certificate path: %s", caAivenCert)
 
 	// DSN string with loaded env variables
-	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=true", dbUser, dbPassword, dbHost, dbPort, dbName)
+	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=aiven", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	// define  new command-line flag for the mysql dsn string
 	dsn := flag.String("dsn", DSNstring, "MySQL data source name")
@@ -82,7 +82,6 @@ func main() {
 	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
 		errorLog.Fatal("Failed to append PEM.")
 	}
-	rootCertPool.AppendCertsFromPEM(pem)
 
 	log.Println("Registering TLS config...")
 
