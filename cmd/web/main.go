@@ -57,7 +57,11 @@ func main() {
 
 	// define  new command-line flag for the mysql dsn string
 	dsn := flag.String("dsn", DSNstring, "MySQL data source name")
-	addr := flag.String("addr", ":4000", "HTTP network address")
+	addr := os.Getenv("PORT")
+	if addr == "" {
+		addr = "4000" // default port
+	}
+	// addr := flag.String("addr", ":4000", "HTTP network address")
 
 	// parse flags
 	flag.Parse()
@@ -109,7 +113,7 @@ func main() {
 	}
 	log.Println("Starting server...")
 	srv := &http.Server{
-		Addr:      *addr,
+		Addr:      ":" + addr,
 		ErrorLog:  errorLog,
 		Handler:   app.routes(),
 		TLSConfig: tlsConfig,
@@ -123,10 +127,11 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	infoLog.Printf("Starting server on %s", *addr)
+	infoLog.Printf("Starting server on %s", addr)
 
 	// ListenAndServeTLS() starts HTTPS server
-	err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
+	// err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
+	err = srv.ListenAndServe()
 	// in case of errors log and exit
 	errorLog.Fatal(err)
 }
