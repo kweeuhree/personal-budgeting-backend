@@ -52,7 +52,7 @@ func main() {
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
 	// DSN string with loaded env variables
-	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=true", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	// define  new command-line flag for the mysql dsn string
 	dsn := flag.String("dsn", DSNstring, "MySQL data source name")
