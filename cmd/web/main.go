@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"database/sql"
 	"flag"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"time"
+
+	"github.com/go-sql-driver/mysql"
 
 	"kweeuhree.personal-budgeting-backend/internal/models"
 
@@ -23,7 +26,6 @@ import (
 
 	"github.com/alexedwards/scs/mysqlstore"
 	"github.com/alexedwards/scs/v2"
-	_ "github.com/go-sql-driver/mysql"
 )
 
 // with underscore
@@ -41,16 +43,12 @@ type application struct {
 }
 
 func main() {
-	// Load environment variables from the .env file
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	log.Fatalf("Error loading .env file: %v", err)
-	// }
 	dbHost := os.Getenv("DB_HOST")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 	dbPort := os.Getenv("DB_PORT")
+	caAivenCert := os.Getenv("CA_AIVEN_CERT")
 	// DSN string with loaded env variables
 	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=true", dbUser, dbPassword, dbHost, dbPort, dbName)
 
@@ -68,8 +66,31 @@ func main() {
 	// error and info logs
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
 	log.Printf("DB_HOST: %s, DB_USER: %s, DB_PASSWORD: %s, DB_NAME: %s, DB_PORT: %s", dbHost, dbUser, dbPassword, dbName, dbPort)
 	log.Printf("Using DSN: %s", DSNstring)
+
+	log.Println("Loading CA certificate...")
+	// Load Aiven CA certificate
+	rootCertPool := x509.NewCertPool()
+	pem, err := os.ReadFile(caAivenCert)
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+		errorLog.Fatal("Failed to append PEM.")
+	}
+	rootCertPool.AppendCertsFromPEM(pem)
+
+	log.Println("Registering TLS config...")
+
+	// Register TLS config with custom name
+	err = mysql.RegisterTLSConfig("aiven", &tls.Config{
+		RootCAs: rootCertPool,
+	})
+	if err != nil {
+		errorLog.Fatalf("Failed to register TLS config: %v", err)
+	}
 
 	log.Println("Starting database connection...")
 	// create connection pool, pass openDB() the dsn from the command-line flag
@@ -114,7 +135,6 @@ func main() {
 	}
 	log.Println("Starting server...")
 	srv := &http.Server{
-		// Addr:      ":" + addr,
 		ErrorLog:  errorLog,
 		Handler:   app.routes(),
 		TLSConfig: tlsConfig,
