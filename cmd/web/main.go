@@ -68,6 +68,7 @@ func main() {
 	// error and info logs
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	log.Printf("DB_HOST: %s, DB_USER: %s, DB_PASSWORD: %s, DB_NAME: %s, DB_PORT: %s", dbHost, dbUser, dbPassword, dbName, dbPort)
 
 	log.Println("Starting database connection...")
 	// create connection pool, pass openDB() the dsn from the command-line flag
