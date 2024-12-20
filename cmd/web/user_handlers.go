@@ -17,15 +17,15 @@ type UserSignUpInput struct {
 	Email               string `form:"email"`
 	DisplayName         string `form:"displayName"`
 	Password            string `form:"password"`
-	validator.Validator	`form:"-"`
+	validator.Validator `form:"-"`
 }
 
 type UserResponse struct {
-	UserId  	string 			`json:"userId"`
-	Email 		string 			`json:"email"`
-	DisplayName string			`json:"displayName"`
-	Budget		*BudgetResponse	`json:"budget"`
-	Flash 		string 			`json:"flash"`
+	UserId      string          `json:"userId"`
+	Email       string          `json:"email"`
+	DisplayName string          `json:"displayName"`
+	Budget      *BudgetResponse `json:"budget"`
+	Flash       string          `json:"flash"`
 }
 
 type UserLoginInput struct {
@@ -40,7 +40,7 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(w, "Attempting to create a new user...")
 	// declare a zero-valued instance of userInput struct
 	var form UserSignUpInput
-	
+
 	// parse the form data into the struct
 	err := decodeJSON(w, r, &form)
 	if err != nil {
@@ -81,9 +81,9 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 
 	// Create a response that includes both ID and body
 	response := UserResponse{
-		UserId:  newId,
-		Email: form.Email,
-		Flash: app.getFlash(r.Context()),
+		UserId: newId,
+		Email:  form.Email,
+		Flash:  app.getFlash(r.Context()),
 	}
 
 	// Write the response struct to the response as JSON
@@ -144,7 +144,7 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
 	app.setFlash(r.Context(), "Login successful!")
 
-	userName, err := app.user.GetUserNameByUserId(id);
+	userName, err := app.user.GetUserNameByUserId(id)
 	if err != nil {
 		fmt.Println("Error:", err)
 		userName = ""
@@ -157,25 +157,25 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var returnbudget *BudgetResponse
-    if budget != nil {
-        returnbudget = &BudgetResponse{
-            BudgetId:       budget.BudgetId,
-            CheckingBalance: budget.CheckingBalance,
-            SavingsBalance:  budget.SavingsBalance,
-            BudgetTotal:     budget.BudgetTotal,
-            BudgetRemaining: budget.BudgetRemaining,
-            TotalSpent:      budget.TotalSpent,
-        }
-    } else {
-        returnbudget = nil 
-    }
+	if budget != nil {
+		returnbudget = &BudgetResponse{
+			BudgetId:        budget.BudgetId,
+			CheckingBalance: budget.CheckingBalance,
+			SavingsBalance:  budget.SavingsBalance,
+			BudgetTotal:     budget.BudgetTotal,
+			BudgetRemaining: budget.BudgetRemaining,
+			TotalSpent:      budget.TotalSpent,
+		}
+	} else {
+		returnbudget = nil
+	}
 
 	response := UserResponse{
-		UserId:  id,
-		Email: form.Email,
+		UserId:      id,
+		Email:       form.Email,
 		DisplayName: userName,
-		Budget: returnbudget,
-		Flash: app.getFlash(r.Context()),
+		Budget:      returnbudget,
+		Flash:       app.getFlash(r.Context()),
 	}
 
 	// Write response
@@ -226,4 +226,3 @@ func (app *application) userLogout(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(w, "Logged out the user")
 }
-

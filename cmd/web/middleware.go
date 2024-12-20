@@ -31,13 +31,16 @@ func secureHeaders(next http.Handler) http.Handler {
 
 		if r.Method == http.MethodOptions {
 
+			log.Println("Handling OPTIONS request for CORS preflight")
 			w.Header().Set("Access-Control-Allow-Origin", reactAddress)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
 			w.Header().Set("Access-Control-Allow-Credentials", "true") // Allow credentials (cookies)
 			w.WriteHeader(http.StatusOK)                               // Respond with HTTP 200 OK for preflight
+			log.Println("Preflight CORS response sent with status 200 OK")
 			return
 		}
+		log.Println("Setting CORS headers for non-OPTIONS request")
 		// Specify origin
 		w.Header().Set("Access-Control-Allow-Origin", reactAddress)
 
@@ -52,6 +55,7 @@ func secureHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "deny")
 		w.Header().Set("X-XSS-Protection", "0")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		log.Println("CORS headers set, forwarding request to next handler")
 		next.ServeHTTP(w, r)
 	})
 }
