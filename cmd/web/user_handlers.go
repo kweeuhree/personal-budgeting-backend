@@ -98,6 +98,7 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 
 // authenticate and login the user
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
+	log.Println("userLogin")
 	fmt.Println("Attempting to authenticate and login the user...")
 
 	// Decode the form data into the userLoginInput struct
