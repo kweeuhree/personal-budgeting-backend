@@ -127,12 +127,12 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 // Create a NoSurf middleware function which uses a customized CSRF cookie
 // with the Secure, Path and HttpOnly attributes set.
 func noSurf(next http.Handler) http.Handler {
-	fmt.Println("inside nosurf handler")
 	csrfHandler := nosurf.New(next)
 	csrfHandler.SetBaseCookie(http.Cookie{
 		HttpOnly: true,
 		Path:     "/",
 		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 	return csrfHandler
 }
