@@ -45,8 +45,14 @@ func (app *application) notFound(w http.ResponseWriter) {
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst interface{}) error {
 	err := json.NewDecoder(r.Body).Decode(dst)
 	if err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
 		fmt.Printf("Could not decode JSON, error: %s", err)
+		errorResponse := map[string]string{
+			"error":   "Bad Request",
+			"message": "Invalid JSON in request body", // More detailed message
+			"details": err.Error(),                    // Include the error details for debugging (optional)
+		}
+		encodeJSON(w, http.StatusBadRequest, errorResponse)
+
 		return err
 	}
 	return nil
@@ -55,7 +61,7 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst interface{}) error {
 func encodeJSON(w http.ResponseWriter, status int, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	
+
 	// Marshal the data into a pretty-printed JSON format
 	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
@@ -67,11 +73,11 @@ func encodeJSON(w http.ResponseWriter, status int, data interface{}) error {
 	return err
 }
 
-func (app *application) GetIdFromParams(r *http.Request, IdToFetch string) (string) {
+func (app *application) GetIdFromParams(r *http.Request, IdToFetch string) string {
 	params := httprouter.ParamsFromContext(r.Context())
 	id := params.ByName(IdToFetch)
 	return id
-} 
+}
 
 // Helper method to set a flash message in the session
 func (app *application) setFlash(ctx context.Context, message string) {
@@ -93,7 +99,3 @@ func (app *application) isAuthenticated(r *http.Request) bool {
 	}
 	return isAuthenticated
 }
-
-
-
-
