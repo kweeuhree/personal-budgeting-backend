@@ -10,7 +10,7 @@ import (
 	"os"
 
 	// environment variables
-	"github.com/joho/godotenv"
+
 	// double submit cookies
 	"github.com/justinas/nosurf"
 )
@@ -18,10 +18,10 @@ import (
 func secureHeaders(next http.Handler) http.Handler {
 
 	// Load environment variables from the .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	log.Fatalf("Error loading .env file: %v", err)
+	// }
 
 	reactAddress := os.Getenv("REACT_ADDRESS")
 
