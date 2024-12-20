@@ -38,14 +38,14 @@ func (app *application) routes() http.Handler {
 	// protected user routes
 	router.Handler(http.MethodGet, "/api/users/view/:userId", protected.ThenFunc(app.viewSpecificUser))
 	router.Handler(http.MethodPost, "/api/users/logout", protected.ThenFunc(app.userLogout))
-	
+
 	// budget routes
 	router.Handler(http.MethodGet, "/api/budget/:budgetId/view", protected.ThenFunc(app.budgetView))
 	router.Handler(http.MethodGet, "/api/budget/:budgetId/summary", protected.ThenFunc(app.budgetSummary))
 	router.Handler(http.MethodPost, "/api/budget/create", protected.ThenFunc(app.budgetCreate))
 	router.Handler(http.MethodPut, "/api/budget/update/:budgetId", protected.ThenFunc(app.budgetUpdate))
 	router.Handler(http.MethodDelete, "/api/budget/delete/:budgetId", protected.ThenFunc(app.budgetDelete))
-	
+
 	// expense routes
 	router.Handler(http.MethodGet, "/api/expenses/view", protected.ThenFunc(app.expensesView))
 	router.Handler(http.MethodGet, "/api/expenses/view/:expenseId", protected.ThenFunc(app.specificExpenseView))
@@ -58,7 +58,7 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/api/categories/expenses/:categoryId", protected.ThenFunc(app.specificCategoryExpensesView))
 	router.Handler(http.MethodPost, "/api/categories/create", protected.ThenFunc(app.categoryCreate))
 	router.Handler(http.MethodDelete, "/api/categories/delete/:categoryId", protected.ThenFunc(app.categoryDelete))
-	
+
 	// Create a middleware chain containing our 'standard' middleware
 	// which will be used for every request our application receives.
 	standard := alice.New(app.recoverPanic, app.logRequest, secureHeaders)

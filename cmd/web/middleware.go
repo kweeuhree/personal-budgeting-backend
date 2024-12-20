@@ -61,6 +61,7 @@ func secureHeaders(next http.Handler) http.Handler {
 }
 
 func (app *application) requireAuthentication(next http.Handler) http.Handler {
+	log.Println("requireAuthentication handler...")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("requireAuthentication middleware triggered for", r.URL.Path)
 		// if the user is not authenticated, redirect them to the login page and
@@ -86,6 +87,7 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 }
 
 func (app *application) authenticate(next http.Handler) http.Handler {
+	log.Println("authenticate handler...")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("authenticate middleware triggered for", r.URL.Path)
 		// Retrieve the authenticatedUserId value from the session
