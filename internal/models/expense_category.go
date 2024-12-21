@@ -24,7 +24,7 @@ type ExpenseCategoryModel struct {
 func (m *ExpenseCategoryModel) Insert(expenseCategoryId, userId, name, description string, totalSum int64) (string, error) {
 	// use placeholder parameters instead of interpolating data in the SQL query
 	// as this is untrusted user input from a form
-	stmt := `INSERT INTO ExpenseCategory (expenseCategoryId, userId, name, description, totalSum) 	
+	stmt := `INSERT INTO expensecategory (expenseCategoryId, userId, name, description, totalSum) 	
 			VALUES(?, ?, ?, ?, ?)`
 
 	_, err := m.DB.Exec(stmt, expenseCategoryId, userId, name, description, totalSum)
@@ -38,7 +38,7 @@ func (m *ExpenseCategoryModel) Insert(expenseCategoryId, userId, name, descripti
 // return a specific expenseCategory based on its id
 func (m *ExpenseCategoryModel) Get(expenseCategoryId string) (*ExpenseCategory, error) {
 	stmt := `SELECT expenseCategoryId, userId, name, description, totalSum, 
-			FROM ExpenseCategory WHERE expenseCategoryId = ?`
+			FROM expensecategory WHERE expenseCategoryId = ?`
 
 	// This returns a pointer to a sql.Row object
 	// which holds the result from the database
@@ -66,7 +66,7 @@ func (m *ExpenseCategoryModel) Get(expenseCategoryId string) (*ExpenseCategory, 
 
 // return all created ExpenseCategories
 func (m *ExpenseCategoryModel) All(userId string) ([]*ExpenseCategory, error) {
-	stmt := `SELECT * FROM ExpenseCategory
+	stmt := `SELECT * FROM expensecategory
 			WHERE userId = ?`
 
 	// Use the Query() method on the connection pool to execute the stmt
@@ -116,7 +116,7 @@ func (m *ExpenseCategoryModel) All(userId string) ([]*ExpenseCategory, error) {
 // return all created ExpenseCategories
 func (m *ExpenseCategoryModel) AllExpensesPerCategory(categoryId string) ([]*Expense, error) {
 	stmt := `SELECT expenseId, userId, categoryId, description, expenseType, amountInCents, createdAt 
-	 		FROM Expenses WHERE categoryId = ?
+	 		FROM expenses WHERE categoryId = ?
 			ORDER BY createdAt DESC`
 
 	// this returns a sql.Rows resultset containing the result of query
@@ -164,7 +164,7 @@ func (m *ExpenseCategoryModel) AllExpensesPerCategory(categoryId string) ([]*Exp
 
 // update an expense category
 func (m *ExpenseCategoryModel) Put(userId, expenseCategoryId, name, description string) error {
-	stmt := `UPDATE ExpenseCategory 
+	stmt := `UPDATE expensecategory 
 			SET name = ?,
 			description = ? 
 			WHERE expenseCategoryId = ? and
@@ -183,7 +183,7 @@ func (m *ExpenseCategoryModel) Put(userId, expenseCategoryId, name, description 
 
 // delete an expense category
 func (m *ExpenseCategoryModel) Delete(expenseCategoryId, userId string) error {
-	stmt := `DELETE FROM ExpenseCategory WHERE expenseCategoryId = ? and userId = ?`
+	stmt := `DELETE FROM expensecategory WHERE expenseCategoryId = ? and userId = ?`
 
 	result, err := m.DB.Exec(stmt, expenseCategoryId, userId)
 	if err != nil {
@@ -209,7 +209,7 @@ func (m *ExpenseCategoryModel) Delete(expenseCategoryId, userId string) error {
 }
 
 func (m *ExpenseCategoryModel) PutTotalSum(userId, categoryId string, amount int64) error {
-	stmt := `UPDATE ExpenseCategory 
+	stmt := `UPDATE expensecategory 
 			SET totalSum = ? 
 			WHERE expenseCategoryId = ? and
 			userId = ?`
@@ -228,7 +228,7 @@ func (m *ExpenseCategoryModel) PutTotalSum(userId, categoryId string, amount int
 // return a specific expenseCategory based on its id
 func (m *ExpenseCategoryModel) GetCategoryTotalSum(userId, expenseCategoryId string) (int64, error) {
 	stmt := `SELECT totalSum 
-			FROM ExpenseCategory 
+			FROM expensecategory 
 			WHERE userId = ? and expenseCategoryId = ?`
 
 	// This returns a pointer to a sql.Row object
@@ -256,7 +256,7 @@ func (m *ExpenseCategoryModel) GetCategoryTotalSum(userId, expenseCategoryId str
 
 // Void all expense categories totalSums upon resetting user budget
 func (m *ExpenseCategoryModel) VoidAllTotalSums(userId string) error {
-	stmt := `UPDATE ExpenseCategory 
+	stmt := `UPDATE expensecategory 
 			SET totalSum = 0 
 			WHERE userId = ?`
 

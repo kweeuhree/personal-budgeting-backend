@@ -113,7 +113,7 @@ func (m *UserModel) GetUserNameByUserId(userId string) (string, error) {
 	if err == sql.ErrNoRows {
 		return "", fmt.Errorf("no user found with userId: %s", userId)
 	}
-	
+
 	fmt.Println(userName)
 	return userName, nil
 }

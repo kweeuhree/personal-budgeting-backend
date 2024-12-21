@@ -9,15 +9,15 @@ import (
 
 // define a Budget type
 type Budget struct {
-	BudgetId       	 string
-	UserId			 string
-	CheckingBalance  int64
-	SavingsBalance   int64
-	BudgetTotal      int64
-	BudgetRemaining  int64
-	TotalSpent		 int64
-	UpdatedAt		 time.Time
-	CreatedAt        time.Time
+	BudgetId        string
+	UserId          string
+	CheckingBalance int64
+	SavingsBalance  int64
+	BudgetTotal     int64
+	BudgetRemaining int64
+	TotalSpent      int64
+	UpdatedAt       time.Time
+	CreatedAt       time.Time
 }
 
 // define a Budget model type which wraps a sql.DB connection pool
@@ -27,7 +27,7 @@ type BudgetModel struct {
 
 // insert a new Budget into the database
 func (m *BudgetModel) Insert(budgetId, userId string, checkingBalance, savingsBalance, budgetTotal int64) (string, error) {
-	stmt := `INSERT INTO Budget (
+	stmt := `INSERT INTO budget (
 		budgetId, userId, checkingBalance, savingsBalance, budgetTotal, 
 		budgetRemaining, totalSpent, createdAt, updatedAt
 	) 
@@ -47,7 +47,7 @@ func (m *BudgetModel) Insert(budgetId, userId string, checkingBalance, savingsBa
 // return a specific Budget based on its id
 func (m *BudgetModel) Get(budgetId string) (*Budget, error) {
 	stmt := `SELECT budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, updatedAt, createdAt
-			FROM Budget WHERE budgetId = ?`
+			FROM budget WHERE budgetId = ?`
 
 	// This returns a pointer to a sql.Row object
 	// which holds the result from the database
@@ -85,7 +85,7 @@ func (m *BudgetModel) Get(budgetId string) (*Budget, error) {
 
 // return all created Budgets
 func (m *BudgetModel) All() ([]*Budget, error) {
-	stmt := `SELECT * FROM Budget
+	stmt := `SELECT * FROM budget
 			ORDER BY created DESC`
 
 	// Use the Query() method on the connection pool to execute the stmt
@@ -114,16 +114,16 @@ func (m *BudgetModel) All() ([]*Budget, error) {
 		// Use rows.Scan() to copy the values from each field in the row to
 		// the new budget object.
 		err = rows.Scan(
-		&bud.BudgetId,
-		&bud.UserId,
-		&bud.CheckingBalance,
-		&bud.SavingsBalance,
-		&bud.BudgetTotal,
-		&bud.BudgetRemaining,
-		&bud.TotalSpent,
-		&bud.CreatedAt,
-		&bud.UpdatedAt,
-	)
+			&bud.BudgetId,
+			&bud.UserId,
+			&bud.CheckingBalance,
+			&bud.SavingsBalance,
+			&bud.BudgetTotal,
+			&bud.BudgetRemaining,
+			&bud.TotalSpent,
+			&bud.CreatedAt,
+			&bud.UpdatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -143,7 +143,7 @@ func (m *BudgetModel) All() ([]*Budget, error) {
 
 // update a Budget
 func (m *BudgetModel) Put(budgetId, userId string, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent int64) error {
-	stmt := `UPDATE Budget 
+	stmt := `UPDATE budget 
 			SET checkingBalance = ?, 
 			savingsBalance = ?, 
 			budgetTotal = ?,
@@ -152,7 +152,7 @@ func (m *BudgetModel) Put(budgetId, userId string, checkingBalance, savingsBalan
 			updatedAt = UTC_TIMESTAMP()
 			WHERE budgetId = ?
 			and userId = ?`
-	
+
 	// Execute the statement with the provided id and body
 	_, err := m.DB.Exec(stmt, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, budgetId, userId)
 	if err != nil {
@@ -167,7 +167,7 @@ func (m *BudgetModel) Put(budgetId, userId string, checkingBalance, savingsBalan
 // delete a Budget
 func (m *BudgetModel) Delete(budgetId, userId string) error {
 	// Execute the statement with the provided id
-	stmt := `DELETE FROM Budget WHERE budgetId = ? and userId = ?`
+	stmt := `DELETE FROM budget WHERE budgetId = ? and userId = ?`
 
 	result, err := m.DB.Exec(stmt, budgetId, userId)
 	if err != nil {
@@ -195,7 +195,7 @@ func (m *BudgetModel) Delete(budgetId, userId string) error {
 // Find a budget based on UserId
 func (m *BudgetModel) GetBudgetByUserId(userId string) (*Budget, error) {
 	stmt := `SELECT budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent 
-			FROM Budget WHERE userId = ?`
+			FROM budget WHERE userId = ?`
 	row := m.DB.QueryRow(stmt, userId)
 
 	budget := &Budget{}

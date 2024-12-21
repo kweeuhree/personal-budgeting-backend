@@ -26,7 +26,7 @@ type ExpenseModel struct {
 
 // insert a new Expense into the database
 func (m *ExpenseModel) Insert(expenseId, userId, categoryId, description, expenseType string, amountInCents int64) (string, error) {
-	stmt := `INSERT INTO Expenses (expenseId, userId, categoryId, description, expenseType, amountInCents, createdAt) 	
+	stmt := `INSERT INTO expenses (expenseId, userId, categoryId, description, expenseType, amountInCents, createdAt) 	
 			VALUES(?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())`
 
 	_, err := m.DB.Exec(stmt, expenseId, userId, categoryId, description, expenseType, amountInCents)
@@ -41,7 +41,7 @@ func (m *ExpenseModel) Insert(expenseId, userId, categoryId, description, expens
 func (m *ExpenseModel) Get(expenseId string) (*Expense, error) {
 	// Write the SQL statement we want to execute
 	stmt := `SELECT expenseId, userId, categoryId, description, expenseType, amountInCents, createdAt 
-			FROM Expenses WHERE expenseId = ?`
+			FROM expenses WHERE expenseId = ?`
 
 	// This returns a pointer to a sql.Row object
 	// which holds the result from the database
@@ -69,7 +69,7 @@ func (m *ExpenseModel) Get(expenseId string) (*Expense, error) {
 
 // return the all created Expenses
 func (m *ExpenseModel) All(userId string) ([]*Expense, error) {
-	stmt := `SELECT * FROM Expenses
+	stmt := `SELECT * FROM expenses
 			WHERE userId = ?
 			ORDER BY createdAt DESC`
 
@@ -117,7 +117,7 @@ func (m *ExpenseModel) All(userId string) ([]*Expense, error) {
 // update
 func (m *ExpenseModel) Put(expenseId, userId, categoryId, description, expenseType string, amountInCents int64) error {
 	// SQL statement we want to execute
-	stmt := `UPDATE Expenses 
+	stmt := `UPDATE expenses 
 			SET categoryId = ?, 
 			description = ?, 
 			expenseType = ?,
@@ -139,7 +139,7 @@ func (m *ExpenseModel) Put(expenseId, userId, categoryId, description, expenseTy
 // delete
 func (m *ExpenseModel) Delete(expenseId, userId string) error {
 	// Execute the statement with the provided id
-	stmt := `DELETE FROM Expenses WHERE expenseId = ? and userId = ?`
+	stmt := `DELETE FROM expenses WHERE expenseId = ? and userId = ?`
 
 	result, err := m.DB.Exec(stmt, expenseId, userId)
 	if err != nil {
@@ -165,7 +165,7 @@ func (m *ExpenseModel) Delete(expenseId, userId string) error {
 }
 
 func (m *ExpenseModel) DeleteAll(userId string) error {
-	stmt := `DELETE FROM Expenses
+	stmt := `DELETE FROM expenses
 			WHERE userId = ?`
 
 	result, err := m.DB.Exec(stmt, userId)
@@ -192,7 +192,7 @@ func (m *ExpenseModel) DeleteAll(userId string) error {
 }
 
 func (m *ExpenseModel) DeleteAllByCategory(userId, expenseCategoryId string) error {
-	stmt := `DELETE FROM Expenses
+	stmt := `DELETE FROM expenses
 			WHERE userId = ? and categoryId = ?`
 
 	result, err := m.DB.Exec(stmt, userId, expenseCategoryId)
