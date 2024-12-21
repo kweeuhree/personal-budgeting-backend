@@ -16,7 +16,7 @@ type Budget struct {
 	BudgetTotal     int64
 	BudgetRemaining int64
 	TotalSpent      int64
-	UpdatedAt       time.Time
+	UpdatedAt       *time.Time
 	CreatedAt       time.Time
 }
 
