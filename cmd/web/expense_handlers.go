@@ -54,7 +54,7 @@ func (app *application) expensesView(w http.ResponseWriter, r *http.Request) {
 			AmountInCents: exp.AmountInCents,
 			Description:   exp.Description,
 			ExpenseType:   exp.ExpenseType,
-			CreatedAt:     *exp.CreatedAt,
+			CreatedAt:     exp.CreatedAt,
 		}
 	}
 
