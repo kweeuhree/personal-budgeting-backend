@@ -52,7 +52,7 @@ func main() {
 	log.Printf("Using CA certificate path: %s", caAivenCert)
 
 	// DSN string with loaded env variables
-	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=aiven", dbUser, dbPassword, dbHost, dbPort, dbName)
+	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=aiven&parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
 
 	// define  new command-line flag for the mysql dsn string
 	dsn := flag.String("dsn", DSNstring, "MySQL data source name")

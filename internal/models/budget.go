@@ -16,7 +16,7 @@ type Budget struct {
 	BudgetTotal     int64
 	BudgetRemaining int64
 	TotalSpent      int64
-	UpdatedAt       *time.Time
+	UpdatedAt       time.Time
 	CreatedAt       time.Time
 }
 
@@ -67,8 +67,8 @@ func (m *BudgetModel) Get(budgetId string) (*Budget, error) {
 		&bud.BudgetTotal,
 		&bud.BudgetRemaining,
 		&bud.TotalSpent,
-		&bud.CreatedAt,
 		&bud.UpdatedAt,
+		&bud.CreatedAt,
 	)
 	if err != nil {
 		// If the query returns no rows, then row.Scan() will return a

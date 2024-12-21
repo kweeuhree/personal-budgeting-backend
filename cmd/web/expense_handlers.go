@@ -14,22 +14,22 @@ import (
 
 // Input struct for creating and updating expenses
 type ExpenseInput struct {
-	Description   string  `json:"description"`
-	AmountInCents int64   `json:"amountInCents"`
-	CategoryId	  string  `json:"categoryId"`
-	ExpenseType   string  `json:"expenseType"`
+	Description   string `json:"description"`
+	AmountInCents int64  `json:"amountInCents"`
+	CategoryId    string `json:"categoryId"`
+	ExpenseType   string `json:"expenseType"`
 	validator.Validator
 }
 
 // // Response struct for returning expense data
 type ExpenseResponse struct {
-	ExpenseId    	string 		`json:"expenseId"`
-	CategoryId	    *string  	`json:"categoryId"`
-	AmountInCents	int64   	`json:"amountInCents"`
-	Description   	string  	`json:"description"`
-	ExpenseType   	string  	`json:"expenseType"`
-	CreatedAt		time.Time 	`json:"createdAt"`
-	Flash 			string		`json:"flash"`
+	ExpenseId     string    `json:"expenseId"`
+	CategoryId    *string   `json:"categoryId"`
+	AmountInCents int64     `json:"amountInCents"`
+	Description   string    `json:"description"`
+	ExpenseType   string    `json:"expenseType"`
+	CreatedAt     time.Time `json:"createdAt"`
+	Flash         string    `json:"flash"`
 }
 
 // read all user expenses
@@ -39,7 +39,7 @@ func (app *application) expensesView(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, fmt.Errorf("userId not found in session"))
 		return
 	}
-	
+
 	exps, err := app.expenses.All(userId)
 	if err != nil {
 		app.serverError(w, err)
@@ -49,12 +49,12 @@ func (app *application) expensesView(w http.ResponseWriter, r *http.Request) {
 	response := make([]ExpenseResponse, len(exps))
 	for i, exp := range exps {
 		response[i] = ExpenseResponse{
-			ExpenseId: exp.ExpenseId,
-			CategoryId: &exp.CategoryId,
+			ExpenseId:     exp.ExpenseId,
+			CategoryId:    &exp.CategoryId,
 			AmountInCents: exp.AmountInCents,
-			Description: exp.Description,
-			ExpenseType: exp.ExpenseType,
-			CreatedAt: exp.CreatedAt,
+			Description:   exp.Description,
+			ExpenseType:   exp.ExpenseType,
+			CreatedAt:     *exp.CreatedAt,
 		}
 	}
 
@@ -69,8 +69,6 @@ func (app *application) specificExpenseView(w http.ResponseWriter, r *http.Reque
 		app.notFound(w)
 		return
 	}
-
-	
 
 	exp, err := app.expenses.Get(id)
 
@@ -114,7 +112,7 @@ func (app *application) expenseCreate(w http.ResponseWriter, r *http.Request) {
 
 	// validate the input against existing balance
 	err = app.CurrentBudgetIsValid(userId, input.ExpenseType, input.AmountInCents)
-		
+
 	if err != nil {
 		app.serverError(w, fmt.Errorf("failed to update current budget: %v", err))
 		return
@@ -140,15 +138,15 @@ func (app *application) expenseCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    app.setFlash(r.Context(), "Expense has been created.")
+	app.setFlash(r.Context(), "Expense has been created.")
 
 	response := ExpenseResponse{
-		ExpenseId:  id,
-		CategoryId: &input.CategoryId,
+		ExpenseId:     id,
+		CategoryId:    &input.CategoryId,
 		AmountInCents: input.AmountInCents,
-		Description: input.Description,
-		ExpenseType: input.ExpenseType,
-		Flash: app.getFlash(r.Context()),
+		Description:   input.Description,
+		ExpenseType:   input.ExpenseType,
+		Flash:         app.getFlash(r.Context()),
 	}
 
 	err = encodeJSON(w, http.StatusCreated, response)
@@ -200,9 +198,9 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 
 		response := ExpenseResponse{
-			ExpenseId:    expenseId,
+			ExpenseId:     expenseId,
 			AmountInCents: input.AmountInCents,
-			Flash: app.getFlash(r.Context()),
+			Flash:         app.getFlash(r.Context()),
 		}
 
 		log.Printf("Budget successfully updated")
@@ -213,7 +211,7 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Update the new Expense 
+	// Update the new Expense
 	err = app.expenses.Put(expenseId, userId, input.CategoryId, input.Description, input.ExpenseType, input.AmountInCents)
 	if err != nil {
 		app.serverError(w, err)
@@ -222,12 +220,12 @@ func (app *application) expenseUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// Create a response that includes both ID and body
 	response := ExpenseResponse{
-		ExpenseId:  expenseId,
-		CategoryId: &input.CategoryId,
+		ExpenseId:     expenseId,
+		CategoryId:    &input.CategoryId,
 		AmountInCents: input.AmountInCents,
-		Description: input.Description,
-		ExpenseType: input.ExpenseType,
-		Flash: app.getFlash(r.Context()),
+		Description:   input.Description,
+		ExpenseType:   input.ExpenseType,
+		Flash:         app.getFlash(r.Context()),
 	}
 
 	// Write the response struct to the response as JSON
@@ -265,20 +263,20 @@ func (app *application) expenseDelete(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.serverError(w, err)
 		return
-	} 
+	}
 	// add the expense amount back to the budget
 	err = app.CalculateAndUpdateBudget(userId, UpdateTypeAdd, deletedExpense.ExpenseType, deletedExpense.AmountInCents, true)
 	if err != nil {
 		app.serverError(w, fmt.Errorf("unable to increment category expenses %d; %s", deletedExpense.AmountInCents, err))
 		return
 	}
-	
+
 	// Update relevant category expenses
 	err = app.UpdateCategoryExpenses(userId, deletedExpense.CategoryId, Decrement, deletedExpense.AmountInCents)
 	if err != nil {
 		app.serverError(w, fmt.Errorf("unable to increment category expenses %d; %s", deletedExpense.AmountInCents, err))
 		return
 	}
-	
+
 	encodeJSON(w, http.StatusOK, "Deleted successfully!")
 }
