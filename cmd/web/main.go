@@ -112,6 +112,10 @@ func main() {
 	// Use the MySQL session store with the session manager.
 	sessionManager.Store = store
 	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.HttpOnly = true
+	sessionManager.Cookie.Secure = true
+	sessionManager.Cookie.SameSite = http.SameSiteNoneMode
+	sessionManager.Cookie.Path = "/"
 
 	app := &application{
 		errorLog:        errorLog,
