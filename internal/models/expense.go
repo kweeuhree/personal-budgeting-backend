@@ -69,8 +69,9 @@ func (m *ExpenseModel) Get(expenseId string) (*Expense, error) {
 
 // return the all created Expenses
 func (m *ExpenseModel) All(userId string) ([]*Expense, error) {
-	stmt := `SELECT * FROM expenses
-			WHERE userId = ?
+	stmt := `SELECT expenseId, userId, categoryId, description, expenseType, amountInCents, createdAt 
+			FROM expenses 
+			WHERE userId = ? 
 			ORDER BY createdAt DESC`
 
 	// This returns a sql.Rows resultset containing the result of query
