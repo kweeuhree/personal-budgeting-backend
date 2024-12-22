@@ -13,12 +13,12 @@ func (app *application) routes() http.Handler {
 	// Initialize the router.
 	router := httprouter.New()
 
-	// Create a handler function which wraps our notFound() helper
-	// Assign it as the custom handler for 404 Not Found responses
+	// Catch-all route to serve index.html for all other routes
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		app.notFound(w)
+		http.ServeFile(w, r, "./ui/static/index.html")
 	})
 
+	// Serve static files
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
