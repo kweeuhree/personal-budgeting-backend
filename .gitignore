@@ -1,3 +1,4 @@
 tmp/
 tls/
+etc/
 .env
