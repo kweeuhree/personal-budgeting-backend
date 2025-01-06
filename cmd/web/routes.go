@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/julienschmidt/httprouter" // router
 	"github.com/justinas/alice"           // middleware
@@ -15,6 +16,10 @@ func (app *application) routes() http.Handler {
 
 	// Catch-all route to serve index.html for all other routes
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
+			http.Error(w, "index.html not found", http.StatusInternalServerError)
+			return
+		}
 		http.ServeFile(w, r, "./ui/static/index.html")
 	})
 
