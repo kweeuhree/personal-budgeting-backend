@@ -36,6 +36,7 @@ func (app *application) routes() http.Handler {
 		indexPath := filepath.Join(staticDir, "index.html")
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
 			log.Printf("Static directory: %s", staticDir)
+			log.Printf("indexPath: %s", indexPath)
 			http.Error(w, "index.html not found", http.StatusInternalServerError)
 			return
 		}
