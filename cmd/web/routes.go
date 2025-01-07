@@ -16,10 +16,13 @@ func (app *application) routes() http.Handler {
 	// Serve static files
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
-	router.Handler(http.MethodGet, "/", http.StripPrefix("/static", fileServer))
+	// router.Handler(http.MethodGet, "/", http.StripPrefix("/static", fileServer))
 
+	indexPath := "/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/ui/static/index.html"
 	// Catch-all route to serve index.html for all other routes
-	router.NotFound = http.StripPrefix("/static", http.FileServer(http.Dir("./ui/static")))
+	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, indexPath)
+	})
 
 	router.GET("/check-index", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		indexPath := "/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/ui/static/index.html"
