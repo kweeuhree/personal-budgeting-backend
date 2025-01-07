@@ -33,7 +33,10 @@ func (app *application) routes() http.Handler {
 			if err != nil {
 				log.Fatalf("Error reading directory: %v", err)
 			}
-			log.Printf("staticDir content: %+v", files)
+			log.Print("staticDir content:")
+			for _, file := range files {
+				log.Printf("Name: %s, IsDir: %v, Size: %d bytes", file.Name(), file.IsDir(), file.Size())
+			}
 			http.Error(w, "index.html not found", http.StatusInternalServerError)
 			return
 		}
