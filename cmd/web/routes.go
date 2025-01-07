@@ -35,6 +35,7 @@ func (app *application) routes() http.Handler {
 	router.GET("/check-index", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		indexPath := filepath.Join(staticDir, "index.html")
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+			log.Printf("Static directory: %s", staticDir)
 			http.Error(w, "index.html not found", http.StatusInternalServerError)
 			return
 		}
