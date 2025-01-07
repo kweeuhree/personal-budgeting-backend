@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/julienschmidt/httprouter" // router
 	"github.com/justinas/alice"           // middleware
@@ -14,18 +13,12 @@ func (app *application) routes() http.Handler {
 	// Initialize the router.
 	router := httprouter.New()
 
-	// Catch-all route to serve index.html for all other routes
-	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
-			http.Error(w, "index.html not found", http.StatusInternalServerError)
-			return
-		}
-		http.ServeFile(w, r, "./ui/static/index.html")
-	})
-
 	// Serve static files
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
+	router.Handler(http.MethodGet, "/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./ui/static/index.html")
+	}))
 
 	// uprotected application routes using the "dynamic" middleware chain, use nosurf middleware
 	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
@@ -63,6 +56,20 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/api/categories/expenses/:categoryId", protected.ThenFunc(app.specificCategoryExpensesView))
 	router.Handler(http.MethodPost, "/api/categories/create", protected.ThenFunc(app.categoryCreate))
 	router.Handler(http.MethodDelete, "/api/categories/delete/:categoryId", protected.ThenFunc(app.categoryDelete))
+
+	// Catch-all route to serve index.html for all other routes
+	// router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
+	// 		http.Error(w, "index.html not found", http.StatusInternalServerError)
+	// 		return
+	// 	}
+	// 	w.Write([]byte(" The page you requested could not be found."))
+	// 	http.ServeFile(w, r, "./ui/static/index.html")
+	// })
+
+	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	// 	http.ServeFile(w, r, "./ui/static/index.html")
+	// })
 
 	// Create a middleware chain containing our 'standard' middleware
 	// which will be used for every request our application receives.
