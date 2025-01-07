@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/julienschmidt/httprouter" // router
 	"github.com/justinas/alice"           // middleware
@@ -26,7 +25,7 @@ func (app *application) routes() http.Handler {
 		indexPath := "./ui/static/index.html"
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
 			log.Printf("Error: %s", err)
-			dir, err := os.Open(/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/cmd/web)
+			dir, err := os.Open("/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/cmd/web")
 			if err != nil {
 				log.Fatalf("Error opening directory: %v", err)
 			}
