@@ -43,6 +43,13 @@ type application struct {
 }
 
 func main() {
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Error getting current working directory:", err)
+	}
+	log.Println("Current working directory:", cwd)
+
 	dbHost := os.Getenv("DB_HOST")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
@@ -83,8 +90,6 @@ func main() {
 		errorLog.Fatal("Failed to append PEM.")
 	}
 
-	log.Println("Registering TLS config...")
-
 	// Register TLS config with custom name
 	err = mysql.RegisterTLSConfig("aiven", &tls.Config{
 		RootCAs: rootCertPool,
@@ -93,14 +98,12 @@ func main() {
 		errorLog.Fatalf("Failed to register TLS config: %v", err)
 	}
 
-	log.Println("Starting database connection...")
 	// create connection pool, pass openDB() the dsn from the command-line flag
 	db, err := openDB(*dsn)
 	if err != nil {
 		errorLog.Fatal(err)
 	}
 
-	log.Println("Database connected successfully")
 	// defer a call to db.Close() so that the connection pool is closed before
 	// the main() function exits
 	defer db.Close()

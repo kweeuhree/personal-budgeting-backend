@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: personal-budgeting-backend
+    env: go
+    buildCommand: go build -tags netgo -ldflags '-s -w' -o app
+    startCommand: ./app
+    staticPublishDirectory: ./ui/static
+
+    # routes: Defines how static files and other routes should be mapped.
+
+    # The first route (/static/*) specifies that static files will be
+    # served from /static/ URL path and mapped to the correct directory (./ui/static).
+
+    # The second route (/) serves the root route and ensures that index.html
+    # or other resources are handled correctly.
+    routes:
+      - src: /static/*
+        dest: /static/*
+      - src: /
+        dest: /
