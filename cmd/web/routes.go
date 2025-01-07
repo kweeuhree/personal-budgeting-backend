@@ -21,6 +21,7 @@ func (app *application) routes() http.Handler {
 	}
 	fileServer := http.FileServer(http.Dir(staticDir))
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
+	router.Handler(http.MethodGet, "/", http.StripPrefix("/static", fileServer))
 
 	// Catch-all route to serve index.html for all other routes
 	router.NotFound = fileServer
@@ -29,7 +30,15 @@ func (app *application) routes() http.Handler {
 		indexPath := filepath.Join(staticDir, "index.html")
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
 			log.Printf("Error: %s", err)
-			log.Printf("indexPath: %s", indexPath)
+			dir, err := os.Open(staticDir)
+			if err != nil {
+				log.Fatalf("Error opening directory: %v", err)
+			}
+			files, err := dir.Readdir(-1)
+			if err != nil {
+				log.Fatalf("Error reading directory: %v", err)
+			}
+			log.Printf("staticDir content: %+v", files)
 			http.Error(w, "index.html not found", http.StatusInternalServerError)
 			return
 		}
