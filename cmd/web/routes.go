@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/julienschmidt/httprouter" // router
 	"github.com/justinas/alice"           // middleware
@@ -56,16 +57,22 @@ func (app *application) routes() http.Handler {
 
 	// Catch-all route to serve index.html for all other routes
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
-		// 	http.Error(w, "index.html not found", http.StatusInternalServerError)
-		// 	return
-		// }
-		w.Write([]byte(" The page you requested could not be found."))
-		// http.ServeFile(w, r, "./ui/static/index.html")
+		if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
+			http.Error(w, "index.html not found", http.StatusInternalServerError)
+			return
+		}
+		http.ServeFile(w, r, "./ui/static/index.html")
 	})
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./ui/static/index.html")
+	router.GET("/check-index", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
+			http.Error(w, "index.html not found", http.StatusInternalServerError)
+			log.Println("Error: index.html not found in ./ui/static/")
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("index.html is available"))
+		log.Println("index.html is registered and available.")
 	})
 
 	// Create a middleware chain containing our 'standard' middleware
