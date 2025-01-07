@@ -15,7 +15,7 @@ func (app *application) routes() http.Handler {
 	// Initialize the router.
 	router := httprouter.New()
 	// Serve static files
-	staticDir, err := filepath.Abs("./ui/static/")
+	staticDir, err := filepath.Abs("/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/cmd/web/ui/static/")
 	if err != nil {
 		log.Fatal("Error resolving absolute path for static files:", err)
 	}

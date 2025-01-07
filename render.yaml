@@ -4,7 +4,7 @@ services:
     env: go
     buildCommand: go build -tags netgo -ldflags '-s -w' -o app
     startCommand: ./app
-    staticPublishDirectory: ./ui/static
+    staticPublishPath: /opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/cmd/web/ui/static/
 
     # routes: Defines how static files and other routes should be mapped.
 
