@@ -19,9 +19,21 @@ func (app *application) routes() http.Handler {
 	// router.Handler(http.MethodGet, "/", http.StripPrefix("/static", fileServer))
 
 	indexPath := "/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/ui/static/index.html"
+
+	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		log.Print("Attempting to serve index.html for root route")
+		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+			log.Printf("Error: %s", err)
+			http.Error(w, "index.html not found", http.StatusInternalServerError)
+			return
+		}
+
+		http.ServeFile(w, r, indexPath)
+	})
+
 	// Catch-all route to serve index.html for all other routes
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Print("Attempting to serve index.html")
+		log.Print("Attempting to serve index.html for undefined route")
 		http.ServeFile(w, r, indexPath)
 	})
 
