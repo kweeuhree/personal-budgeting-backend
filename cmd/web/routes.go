@@ -22,10 +22,10 @@ func (app *application) routes() http.Handler {
 	router.NotFound = http.StripPrefix("/static", http.FileServer(http.Dir("./ui/static")))
 
 	router.GET("/check-index", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		indexPath := "./ui/static/index.html"
+		indexPath := "/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/ui/static/index.html"
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
 			log.Printf("Error: %s", err)
-			dir, err := os.Open("/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/ui/static/")
+			dir, err := os.Open("/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/ui/static/index.html")
 			if err != nil {
 				log.Fatalf("Error opening directory: %v", err)
 			}
