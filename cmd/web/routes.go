@@ -55,14 +55,14 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodDelete, "/api/categories/delete/:categoryId", protected.ThenFunc(app.categoryDelete))
 
 	// Catch-all route to serve index.html for all other routes
-	// router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 	if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
-	// 		http.Error(w, "index.html not found", http.StatusInternalServerError)
-	// 		return
-	// 	}
-	// 	w.Write([]byte(" The page you requested could not be found."))
-	// 	http.ServeFile(w, r, "./ui/static/index.html")
-	// })
+	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
+		// 	http.Error(w, "index.html not found", http.StatusInternalServerError)
+		// 	return
+		// }
+		w.Write([]byte(" The page you requested could not be found."))
+		// http.ServeFile(w, r, "./ui/static/index.html")
+	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./ui/static/index.html")
