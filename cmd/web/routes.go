@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/julienschmidt/httprouter" // router
 	"github.com/justinas/alice"           // middleware
@@ -13,10 +14,34 @@ func (app *application) routes() http.Handler {
 	log.Println("Routing...")
 	// Initialize the router.
 	router := httprouter.New()
-
 	// Serve static files
-	fileServer := http.FileServer(http.Dir("./ui/static/"))
+	staticDir, err := filepath.Abs("./ui/static/")
+	if err != nil {
+		log.Fatal("Error resolving absolute path for static files:", err)
+	}
+	fileServer := http.FileServer(http.Dir(staticDir))
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
+
+	// Catch-all route to serve index.html for all other routes
+	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		indexPath := filepath.Join(staticDir, "index.html")
+		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+			http.Error(w, "index.html not found", http.StatusInternalServerError)
+			return
+		}
+		http.ServeFile(w, r, indexPath)
+	})
+
+	router.GET("/check-index", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		indexPath := filepath.Join(staticDir, "index.html")
+		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
+			http.Error(w, "index.html not found", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("index.html is available"))
+		log.Println("index.html is registered and available.")
+	})
 
 	// uprotected application routes using the "dynamic" middleware chain, use nosurf middleware
 	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
@@ -54,26 +79,6 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/api/categories/expenses/:categoryId", protected.ThenFunc(app.specificCategoryExpensesView))
 	router.Handler(http.MethodPost, "/api/categories/create", protected.ThenFunc(app.categoryCreate))
 	router.Handler(http.MethodDelete, "/api/categories/delete/:categoryId", protected.ThenFunc(app.categoryDelete))
-
-	// Catch-all route to serve index.html for all other routes
-	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
-			http.Error(w, "index.html not found", http.StatusInternalServerError)
-			return
-		}
-		http.ServeFile(w, r, "./ui/static/index.html")
-	})
-
-	router.GET("/check-index", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		if _, err := os.Stat("./ui/static/index.html"); os.IsNotExist(err) {
-			http.Error(w, "index.html not found", http.StatusInternalServerError)
-			log.Println("Error: index.html not found in ./ui/static/")
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("index.html is available"))
-		log.Println("index.html is registered and available.")
-	})
 
 	// Create a middleware chain containing our 'standard' middleware
 	// which will be used for every request our application receives.
