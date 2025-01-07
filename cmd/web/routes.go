@@ -21,6 +21,7 @@ func (app *application) routes() http.Handler {
 	indexPath := "/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/ui/static/index.html"
 	// Catch-all route to serve index.html for all other routes
 	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Print("Attempting to serve index.html")
 		http.ServeFile(w, r, indexPath)
 	})
 
