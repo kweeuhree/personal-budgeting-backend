@@ -16,9 +16,6 @@ func (app *application) routes() http.Handler {
 	// Serve static files
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
-	router.Handler(http.MethodGet, "/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./ui/static/index.html")
-	}))
 
 	// uprotected application routes using the "dynamic" middleware chain, use nosurf middleware
 	dynamic := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
@@ -67,9 +64,9 @@ func (app *application) routes() http.Handler {
 	// 	http.ServeFile(w, r, "./ui/static/index.html")
 	// })
 
-	// http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	http.ServeFile(w, r, "./ui/static/index.html")
-	// })
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./ui/static/index.html")
+	})
 
 	// Create a middleware chain containing our 'standard' middleware
 	// which will be used for every request our application receives.
