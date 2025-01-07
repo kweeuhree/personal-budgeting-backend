@@ -15,11 +15,7 @@ func (app *application) routes() http.Handler {
 	// Initialize the router.
 	router := httprouter.New()
 	// Serve static files
-	staticDir, err := filepath.Abs("/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/cmd/web/ui/static/")
-	if err != nil {
-		log.Fatal("Error resolving absolute path for static files:", err)
-	}
-	fileServer := http.FileServer(http.Dir(staticDir))
+	fileServer := http.FileServer(http.Dir("./ui/static"))
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 	router.Handler(http.MethodGet, "/", http.StripPrefix("/static", fileServer))
 
@@ -27,10 +23,10 @@ func (app *application) routes() http.Handler {
 	router.NotFound = fileServer
 
 	router.GET("/check-index", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		indexPath := filepath.Join(staticDir, "index.html")
+		indexPath := "./ui/static/index.html"
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
 			log.Printf("Error: %s", err)
-			dir, err := os.Open(staticDir)
+			dir, err := os.Open(/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/cmd/web)
 			if err != nil {
 				log.Fatalf("Error opening directory: %v", err)
 			}
