@@ -19,13 +19,13 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/", http.StripPrefix("/static", fileServer))
 
 	// Catch-all route to serve index.html for all other routes
-	router.NotFound = fileServer
+	router.NotFound = http.StripPrefix("/static", http.FileServer(http.Dir("./ui/static")))
 
 	router.GET("/check-index", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		indexPath := "./ui/static/index.html"
 		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
 			log.Printf("Error: %s", err)
-			dir, err := os.Open("/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/cmd/web")
+			dir, err := os.Open("/opt/render/project/go/src/github.com/kweeuhree/personal-budgeting-backend/")
 			if err != nil {
 				log.Fatalf("Error opening directory: %v", err)
 			}
@@ -33,7 +33,7 @@ func (app *application) routes() http.Handler {
 			if err != nil {
 				log.Fatalf("Error reading directory: %v", err)
 			}
-			log.Print("staticDir content:")
+			log.Print("personal-budgeting-backend/ content:")
 			for _, file := range files {
 				log.Printf("Name: %s, IsDir: %v, Size: %d bytes", file.Name(), file.IsDir(), file.Size())
 			}
