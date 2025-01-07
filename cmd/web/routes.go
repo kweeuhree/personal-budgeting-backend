@@ -23,14 +23,7 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
 	// Catch-all route to serve index.html for all other routes
-	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		indexPath := filepath.Join(staticDir, "index.html")
-		if _, err := os.Stat(indexPath); os.IsNotExist(err) {
-			http.Error(w, "index.html not found", http.StatusInternalServerError)
-			return
-		}
-		http.ServeFile(w, r, indexPath)
-	})
+	router.NotFound = fileServer
 
 	router.GET("/check-index", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		indexPath := filepath.Join(staticDir, "index.html")
