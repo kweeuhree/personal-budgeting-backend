@@ -1,0 +1,47 @@
+openapi: 3.0.3
+info:
+  title: Personal Budgeting
+  description: A budget tracker
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+paths:
+  /api/csrf-token:
+    get:
+      summary: Generates a CSRF token
+      operationId: generateCsrfToken
+      security: []
+      responses:
+        200:
+          description: Returns a CSRF token
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - csrf_token
+                properties:
+                  csrf_token:
+                    type: string
+                    pattern: "^\\S+$"
+                    example: 7cpnevxmIFjaS0yr6msraJistWmqySe/6JPE2ELapCtRyJ+Eg/iZ75ErPoRecEADW5q6jYMzMZjx83RKz+tFIg==
+        400:
+          $ref: "#/components/responses/ServerError"
+
+components:
+  responses:
+    ServerError:
+      description: Server encountered an error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "An error occurred while processing the request."
+
+servers:
+  - url: https://personal-budgeting-backend.onrender.com
+    description: Production server
