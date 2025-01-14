@@ -6,92 +6,91 @@ import (
 	"log"
 )
 
-func (app *application) CurrentBudgetIsValid(userId, balanceType string, sumInCents int64) (error) {
-    // Fetch the current budget for the user
-    currentBudget, err := app.budget.GetBudgetByUserId(userId)
+func (app *application) CurrentBudgetIsValid(userId, balanceType string, sumInCents int64) error {
+	// Fetch the current budget for the user
+	currentBudget, err := app.budget.GetBudgetByUserId(userId)
 
-    if err != nil {
-        return fmt.Errorf("failed to fetch current budget: %v", err)
-    }
+	if err != nil {
+		return fmt.Errorf("failed to fetch current budget: %v", err)
+	}
 
-    if currentBudget == nil {
-        return errors.New("current budget cannot be null")
-    }
-    if sumInCents <= 0 {
-        return errors.New("balance amount must be positive")
-    }
-    if balanceType != BalanceTypeChecking && balanceType != BalanceTypeSavings {
-        return fmt.Errorf("invalid balance type: %s", balanceType)
-    }
-    if (balanceType == BalanceTypeChecking && currentBudget.CheckingBalance < sumInCents) ||
-       (balanceType == BalanceTypeSavings && currentBudget.SavingsBalance < sumInCents) {
-        return fmt.Errorf("insufficient funds in %s account", balanceType)
-    }
-    return nil
+	if currentBudget == nil {
+		return errors.New("current budget cannot be null")
+	}
+	if sumInCents <= 0 {
+		return errors.New("balance amount must be positive")
+	}
+	if balanceType != BalanceTypeChecking && balanceType != BalanceTypeSavings {
+		return fmt.Errorf("invalid balance type: %s", balanceType)
+	}
+	if (balanceType == BalanceTypeChecking && currentBudget.CheckingBalance < sumInCents) ||
+		(balanceType == BalanceTypeSavings && currentBudget.SavingsBalance < sumInCents) {
+		return fmt.Errorf("insufficient funds in %s account", balanceType)
+	}
+	return nil
 }
 
 func (app *application) CalculateAndUpdateBudget(
-    userId, updateType, balanceType string, sumInCents int64, isExpense bool,
- ) error {
+	userId, updateType, balanceType string, sumInCents int64, isExpense bool,
+) error {
 
-    // add the expense amount back to the budget
+	// add the expense amount back to the budget
 	budgetId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, err := app.CalculateBudgetUpdates(userId, updateType, balanceType, sumInCents, true)
 	if err != nil {
 		return err
 	}
-    
-    // Update the budget in the database
+
+	// Update the budget in the database
 	app.UpdateBudgetInDB(budgetId, userId, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent)
 
 	return nil
 }
 
 func (app *application) CalculateBudgetUpdates(
-   userId, updateType, balanceType string, sumInCents int64, isExpense bool,
+	userId, updateType, balanceType string, sumInCents int64, isExpense bool,
 ) (string, int64, int64, int64, int64, int64, error) {
-    currentBudget, err := app.budget.GetBudgetByUserId(userId)
-    log.Printf("Current Budget: %+v", currentBudget)
-    if err != nil {
-        return "", 0, 0, 0, 0, 0, fmt.Errorf("failed to fetch current budget: %v", err)
-    }
+	currentBudget, err := app.budget.GetBudgetByUserId(userId)
+	log.Printf("Current Budget: %+v", currentBudget)
+	if err != nil {
+		return "", 0, 0, 0, 0, 0, fmt.Errorf("failed to fetch current budget: %v", err)
+	}
 
-    updatedBudget := *currentBudget
+	updatedBudget := *currentBudget
 
-    // Adjust checking or savings balance based on balance type
-    if balanceType == BalanceTypeChecking {
-        newCheckingBalance := app.updateBalance(updatedBudget.CheckingBalance, sumInCents, updateType)
-        updatedBudget.CheckingBalance = newCheckingBalance
-    } else if balanceType == BalanceTypeSavings {
-        newSavingsBalance := app.updateBalance(updatedBudget.SavingsBalance, sumInCents, updateType)
-        updatedBudget.SavingsBalance = newSavingsBalance
-    }
+	// Adjust checking or savings balance based on balance type
+	if balanceType == BalanceTypeChecking {
+		newCheckingBalance := app.updateBalance(updatedBudget.CheckingBalance, sumInCents, updateType)
+		updatedBudget.CheckingBalance = newCheckingBalance
+	} else if balanceType == BalanceTypeSavings {
+		newSavingsBalance := app.updateBalance(updatedBudget.SavingsBalance, sumInCents, updateType)
+		updatedBudget.SavingsBalance = newSavingsBalance
+	}
 
-    newBudgetRemaining := updatedBudget.CheckingBalance + updatedBudget.SavingsBalance
-    newTotalSpent := updatedBudget.TotalSpent
+	newBudgetRemaining := updatedBudget.CheckingBalance + updatedBudget.SavingsBalance
+	newTotalSpent := updatedBudget.TotalSpent
 
-    var newBudgetTotal int64    
+	var newBudgetTotal int64
 
-    switch updateType {
-    case UpdateTypeAdd:
-        newBudgetTotal = updatedBudget.BudgetTotal + sumInCents
-        if isExpense {
-            newTotalSpent = updatedBudget.TotalSpent - sumInCents
-        }
+	switch updateType {
+	case UpdateTypeAdd:
+		newBudgetTotal = updatedBudget.BudgetTotal + sumInCents
+		if isExpense {
+			newTotalSpent = updatedBudget.TotalSpent - sumInCents
+		}
 
-    case UpdateTypeSubtract:
-        newBudgetTotal = updatedBudget.BudgetTotal - sumInCents
-        if isExpense {
-            newTotalSpent = updatedBudget.TotalSpent + sumInCents
-        }
-    }
+	case UpdateTypeSubtract:
+		newBudgetTotal = updatedBudget.BudgetTotal - sumInCents
+		if isExpense {
+			newTotalSpent = updatedBudget.TotalSpent + sumInCents
+		}
+	}
 
-    if newTotalSpent < 0 {
-        newTotalSpent = 0
-    }
+	if newTotalSpent < 0 {
+		newTotalSpent = 0
+	}
 
-    return updatedBudget.BudgetId, updatedBudget.CheckingBalance, updatedBudget.SavingsBalance, newBudgetTotal, newBudgetRemaining, newTotalSpent, nil
+	return updatedBudget.BudgetId, updatedBudget.CheckingBalance, updatedBudget.SavingsBalance, newBudgetTotal, newBudgetRemaining, newTotalSpent, nil
 }
-
 
 func (app *application) updateBalance(currentBalance, sumInCents int64, updateType string) int64 {
 	var updatedBalance int64
@@ -102,4 +101,26 @@ func (app *application) updateBalance(currentBalance, sumInCents int64, updateTy
 		updatedBalance = currentBalance - sumInCents
 	}
 	return updatedBalance
+}
+
+func (app *application) DeleteAllBudgetDetails(budgetId, userId string) error {
+	// Delete the budget using the ID
+	err := app.budget.Delete(budgetId, userId)
+	if err != nil {
+		return err
+	}
+
+	// Delete all expenses associated with that user
+	err = app.expenses.DeleteAll(userId)
+	if err != nil {
+		return err
+	}
+
+	// Void all expense categories totalSums
+	err = app.expenseCategory.VoidAllTotalSums(userId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

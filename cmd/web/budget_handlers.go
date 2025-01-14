@@ -265,22 +265,8 @@ func (app *application) budgetDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Delete the budget using the ID
-	err := app.budget.Delete(budgetId, userId)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	// Delete all expenses associated with that user
-	err = app.expenses.DeleteAll(userId)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-
-	// Void all expense categories totalSums
-	err = app.expenseCategory.VoidAllTotalSums(userId)
+	// Deletes budget, expenses and voids totalSums of existing expense categories
+	err := app.DeleteAllBudgetDetails(budgetId, userId)
 	if err != nil {
 		app.serverError(w, err)
 		return
