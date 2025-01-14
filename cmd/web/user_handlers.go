@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/google/uuid"
 	"kweeuhree.personal-budgeting-backend/internal/models"
 	"kweeuhree.personal-budgeting-backend/internal/validator"
 )
@@ -53,18 +52,11 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 	if !form.Valid() {
 		err := encodeJSON(w, http.StatusOK, form.FieldErrors)
 		if err != nil {
-			// app.serverError(w, err)
-			json.NewEncoder(w).Encode(err)
+			return
 		}
-		return
 	}
 
-	newId := uuid.New().String()
-
-	// Try to create a new user record in the database. If the email already
-	// exists then add an error message to the form and re-display it.
-	err = app.user.Insert(newId, form.Email, form.DisplayName, form.Password)
-
+	newUserId, err := app.CreateAndStoreUser(form.Email, form.DisplayName, form.Password)
 	if err != nil {
 		if errors.Is(err, models.ErrDuplicateEmail) {
 			encodeJSON(w, http.StatusConflict, map[string]interface{}{
@@ -81,7 +73,7 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 
 	// Create a response that includes both ID and body
 	response := UserResponse{
-		UserId: newId,
+		UserId: newUserId,
 		Email:  form.Email,
 		Flash:  app.getFlash(r.Context()),
 	}
