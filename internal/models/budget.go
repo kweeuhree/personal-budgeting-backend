@@ -22,7 +22,17 @@ type Budget struct {
 
 // define a Budget model type which wraps a sql.DB connection pool
 type BudgetModel struct {
-	DB *sql.DB
+	DB       *sql.DB
+	InfoLog  *log.Logger
+	ErrorLog *log.Logger
+}
+
+func NewBudgetModel(db *sql.DB, infoLog *log.Logger, errorLog *log.Logger) *BudgetModel {
+	return &BudgetModel{
+		DB:       db,
+		InfoLog:  infoLog,
+		ErrorLog: errorLog,
+	}
 }
 
 // insert a new Budget into the database
@@ -156,7 +166,7 @@ func (m *BudgetModel) Put(budgetId, userId string, checkingBalance, savingsBalan
 	// Execute the statement with the provided id and body
 	_, err := m.DB.Exec(stmt, checkingBalance, savingsBalance, budgetTotal, budgetRemaining, totalSpent, budgetId, userId)
 	if err != nil {
-		log.Printf("Error while attempting Budget update for budgetId: %s, userId: %s - %v", budgetId, userId, err)
+		m.ErrorLog.Printf("Error while attempting Budget update for budgetId: %s, userId: %s - %v", budgetId, userId, err)
 		return err
 	}
 
@@ -171,20 +181,20 @@ func (m *BudgetModel) Delete(budgetId, userId string) error {
 
 	result, err := m.DB.Exec(stmt, budgetId, userId)
 	if err != nil {
-		log.Printf("Error while deleting a Budget: %s", err)
+		m.ErrorLog.Printf("Error while deleting a Budget: %s", err)
 		return err
 	}
 
 	// Check if the record was actually deleted
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Printf("Error while checking rows affected: %s", err)
+		m.ErrorLog.Printf("Error while checking rows affected: %s", err)
 		return err
 	}
 
 	if rowsAffected == 0 {
 		// No rows were affected, meaning the ID might not exist
-		log.Printf("No rows affected, possible non-existent ID: %s", budgetId)
+		m.ErrorLog.Printf("No rows affected, possible non-existent ID: %s", budgetId)
 		return nil
 	}
 

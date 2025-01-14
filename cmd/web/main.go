@@ -43,13 +43,6 @@ type application struct {
 }
 
 func main() {
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatal("Error getting current working directory:", err)
-	}
-	log.Println("Current working directory:", cwd)
-
 	dbHost := os.Getenv("DB_HOST")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
@@ -120,11 +113,13 @@ func main() {
 	sessionManager.Cookie.SameSite = http.SameSiteNoneMode
 	sessionManager.Cookie.Path = "/"
 
+	budgetModel := models.NewBudgetModel(db, infoLog, errorLog)
+
 	app := &application{
 		errorLog:        errorLog,
 		infoLog:         infoLog,
 		user:            &models.UserModel{DB: db},
-		budget:          &models.BudgetModel{DB: db},
+		budget:          budgetModel,
 		expenses:        &models.ExpenseModel{DB: db},
 		expenseCategory: &models.ExpenseCategoryModel{DB: db},
 		sessionManager:  sessionManager,
