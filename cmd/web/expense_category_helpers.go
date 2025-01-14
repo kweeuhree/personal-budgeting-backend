@@ -14,7 +14,7 @@ func (app *application) UpdateCategoryExpenses(userId, categoryId, updateType st
 	if err != nil {
 		return err
 	}
-	newTotalSum := app.calculateTotalSum(currentTotalSum, amount, updateType)
+	newTotalSum := calculateTotalSum(currentTotalSum, amount, updateType)
 
 	err = app.expenseCategory.PutTotalSum(userId, categoryId, newTotalSum)
 
@@ -26,7 +26,7 @@ func (app *application) UpdateCategoryExpenses(userId, categoryId, updateType st
 	return nil
 }
 
-func (app *application) calculateTotalSum(currentTotalSum, amount int64, updateType string) int64 {
+func calculateTotalSum(currentTotalSum, amount int64, updateType string) int64 {
 	var total int64
 	switch updateType {
 	case Increment:
@@ -39,4 +39,17 @@ func (app *application) calculateTotalSum(currentTotalSum, amount int64, updateT
 	}
 
 	return total
+}
+
+func (app *application) DeleteAllExpensesByCategory(categoryId, userId string) error {
+	err := app.expenses.DeleteAllByCategory(userId, categoryId)
+	if err != nil {
+		return err
+	}
+	err = app.expenseCategory.Delete(categoryId, userId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

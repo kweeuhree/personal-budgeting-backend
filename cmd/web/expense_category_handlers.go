@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/google/uuid" // router
@@ -128,11 +127,7 @@ func (app *application) categoryCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the response struct to the response as JSON
-	err = encodeJSON(w, http.StatusCreated, response)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
+	encodeJSON(w, http.StatusCreated, response)
 }
 
 // delete
@@ -143,19 +138,15 @@ func (app *application) categoryDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id := app.GetIdFromParams(r, "categoryId")
-	if id == "" {
+	categoryId := app.GetIdFromParams(r, "categoryId")
+	if categoryId == "" {
 		app.notFound(w)
-		log.Printf("Exiting due to invalid id")
+		app.infoLog.Printf("Exiting due to invalid id")
 		return
 	}
-	log.Printf("Attempting to delete all expenses per category...")
-	err := app.expenses.DeleteAllByCategory(userId, id)
-	if err != nil {
-		app.serverError(w, err)
-		return
-	}
-	err = app.expenseCategory.Delete(id, userId)
+
+	app.infoLog.Printf("Attempting to delete all expenses per category...")
+	err := app.DeleteAllExpensesByCategory(categoryId, userId)
 	if err != nil {
 		app.serverError(w, err)
 		return
