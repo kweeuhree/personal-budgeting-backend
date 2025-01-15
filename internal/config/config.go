@@ -16,9 +16,9 @@ import (
 )
 
 type Config struct {
-	Addr string
-	DSN  string
-	// TLSConfig      *tls.Config
+	Addr           string
+	DSN            string
+	TLSConfig      *tls.Config
 	DebugPprof     bool
 	SessionManager *scs.SessionManager
 }
@@ -45,8 +45,15 @@ func devConfig() *Config {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 
+	DSNstringVars := []any{dbUser, dbPassword, dbName}
+	for indx, value := range DSNstringVars {
+		if value == nil {
+			fmt.Printf("%s at index %d is nil", value, indx)
+		}
+	}
+
 	// Define new command-line flag for the mysql dsn string
-	DSNstring := fmt.Sprintf("%s:%s@/%s?parseTime=true", dbUser, dbPassword, dbName)
+	DSNstring := fmt.Sprintf("%s:%s@/%s?parseTime=true", DSNstringVars...)
 	dsn := flag.String("dsn", DSNstring, "MySQL data source name")
 
 	// Session manager configuration
@@ -54,26 +61,41 @@ func devConfig() *Config {
 	// Use the MySQL session store with the session manager.
 	sessionManager.Lifetime = 12 * time.Hour
 
+	// assembly implementations are used.
+	tlsConfig := &tls.Config{
+		// if you were to make TLS 1.3 the minimum supported
+		// version in the TLS config for your server, then all browsers able to
+		// use your application will support SameSite cookies
+		MinVersion:       tls.VersionTLS13,
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
 	return &Config{
 		Addr:           *addr, // Development default port
 		DSN:            *dsn,
+		TLSConfig:      tlsConfig,
 		DebugPprof:     true,
 		SessionManager: sessionManager,
 	}
 }
 
 func prodConfig() (*Config, error) {
+
 	// Load production environment variables
-	dbHost := os.Getenv("DB_HOST")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
+	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+
 	caAivenCert := os.Getenv("CA_AIVEN_CERT")
 
-	// if dbHost == "" || dbUser == "" || dbPassword == "" || dbName == "" || dbPort == "" || caAivenCert == "" {
-	// 	return nil, errors.New("missing required production environment variables")
-	// }
+	prodVars := []any{dbUser, dbPassword, dbName, dbPort, dbName, caAivenCert}
+	for _, value := range prodVars {
+		if value == nil {
+			fmt.Printf("%s is nil", value)
+		}
+	}
 
 	log.Println("Loading CA certificate...")
 	// Load Aiven CA certificate
@@ -98,7 +120,7 @@ func prodConfig() (*Config, error) {
 	DSNstring := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=aiven&parseTime=true",
 		dbUser, dbPassword, dbHost, dbPort, dbName)
 
-	dsn := flag.String("dsn", DSNstring, "MySQL data source name")
+	dsn := flag.String("dsn", DSNstring, "Aiven MySQL data source name")
 
 	// Session manager configuration
 	sessionManager := scs.New()
@@ -109,11 +131,20 @@ func prodConfig() (*Config, error) {
 	sessionManager.Cookie.SameSite = http.SameSiteNoneMode
 	sessionManager.Cookie.Path = "/"
 
+	// assembly implementations are used.
+	tlsConfig := &tls.Config{
+		// if you were to make TLS 1.3 the minimum supported
+		// version in the TLS config for your server, then all browsers able to
+		// use your application will support SameSite cookies
+		MinVersion:       tls.VersionTLS13,
+		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+	}
+
 	return &Config{
 		Addr:           fmt.Sprintf(":%s", dbPort),
 		DSN:            *dsn,
 		DebugPprof:     false,
 		SessionManager: sessionManager,
-		// TLSConfig:      tlsConfig,
+		TLSConfig:      tlsConfig,
 	}, nil
 }
