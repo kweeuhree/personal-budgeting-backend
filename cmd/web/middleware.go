@@ -3,38 +3,28 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
 	// environment variables
 
 	// double submit cookies
-	"github.com/joho/godotenv"
+
 	"github.com/justinas/nosurf"
 )
 
 func secureHeaders(next http.Handler) http.Handler {
 	reactAddress := os.Getenv("REACT_ADDRESS")
-	if reactAddress == "" {
-		// Load environment variables
-		err := godotenv.Load()
-		if err != nil {
-			log.Printf("Error loading .env file: %v", err)
-		}
-	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// Handle OPTIONS requests for CORS preflight
 		if r.Method == http.MethodOptions {
-
-			log.Println("Handling OPTIONS request for CORS preflight")
 			w.Header().Set("Access-Control-Allow-Origin", reactAddress)
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
 			w.Header().Set("Access-Control-Allow-Credentials", "true") // Allow credentials (cookies)
 			w.WriteHeader(http.StatusOK)                               // Respond with HTTP 200 OK for preflight
-			log.Println("Preflight CORS response sent with status 200 OK")
 			return
 		}
 		// Specify origin
@@ -51,7 +41,7 @@ func secureHeaders(next http.Handler) http.Handler {
 		w.Header().Set("X-Frame-Options", "deny")
 		w.Header().Set("X-XSS-Protection", "0")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		log.Println("CORS headers set, forwarding request to next handler")
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -107,8 +97,6 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 			ctx := context.WithValue(r.Context(), isAuthenticatedContextKey, true)
 			r = r.WithContext(ctx)
 		}
-		fmt.Println("User ID from session:", id)
-		fmt.Println("User exists:", exists)
 
 		// Call the next handler in the chain.
 		next.ServeHTTP(w, r)
@@ -141,8 +129,6 @@ func (app *application) CSRFToken(w http.ResponseWriter, r *http.Request) {
 	token := nosurf.Token(r)
 	if token == "" {
 		app.errorLog.Println("CSRF token is empty")
-	} else {
-		app.infoLog.Println("CSRF token generated")
 	}
 
 	err := encodeJSON(w, http.StatusOK, map[string]string{"csrf_token": token})

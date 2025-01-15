@@ -97,8 +97,6 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Attempting to authenticate user: %s", form.Email)
-
 	// Validate input
 	form.Validate()
 	if !form.Valid() {

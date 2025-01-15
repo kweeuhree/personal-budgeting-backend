@@ -21,6 +21,7 @@ import (
 
 	"github.com/alexedwards/scs/mysqlstore"
 	"github.com/alexedwards/scs/v2"
+	"github.com/joho/godotenv"
 )
 
 // with underscore
@@ -48,41 +49,47 @@ func main() {
 	env = os.Getenv("ENV")
 	// If env was not populated, set it to development
 	if env != Production {
+		err := godotenv.Load()
+		if err != nil {
+			log.Printf("Error loading .env file: %v", err)
+		}
 		env = Development
 	}
 
-	// error and info logs
+	// Initialize ppof, error and info logs
+	ppofLog := log.New(os.Stdout, "PPOF\t", log.Ldate|log.Ltime)
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	// Load the configuration
+	// Load the configuration based on the environment, pass errorLog
 	cfg, err := config.Load(env, errorLog)
 	if err != nil {
-		log.Fatalf("Error loading configuration: %v", err)
+		errorLog.Fatalf("Error loading configuration: %v", err)
 	}
 
 	// Enable pprof in development
 	if cfg.DebugPprof {
 		go func() {
-			log.Println("pprof debugging enabled on /debug/pprof")
-			log.Println(http.ListenAndServe("localhost:4000", nil))
+			ppofLog.Println("debugging enabled on /debug/pprof")
+			ppofLog.Println(http.ListenAndServe("localhost:4000", nil))
 		}()
 	}
 
-	// Database connection
+	// Initialize connection with relevant database connection string
 	db, err := openDB(cfg.DSN)
 	if err != nil {
-		log.Fatalf("Database connection failed: %v", err)
+		errorLog.Fatalf("Database connection failed: %v", err)
 	}
 	defer db.Close()
 
-	// Create a new MySQL session store using the connection pool.
+	// Create a new MySQL session store using the connection pool
 	store := mysqlstore.New(db)
-	// Use the MySQL session store with the session manager.
+	// Use the MySQL session store with the session manager
 	cfg.SessionManager.Store = store
 
 	budgetModel := models.NewBudgetModel(db, infoLog, errorLog)
 
+	// Initialize application with its dependencies
 	app := &application{
 		errorLog:        errorLog,
 		infoLog:         infoLog,
@@ -93,18 +100,7 @@ func main() {
 		sessionManager:  cfg.SessionManager,
 	}
 
-	// Initialize a tls.Config struct to hold the non-default TLS settings we
-	// want the server to use. In this case the only thing that we're
-	// changing is the curve preferences value, so that only elliptic curves with
-	// assembly implementations are used.
-	// tlsConfig := &tls.Config{
-	// 	// if you were to make TLS 1.3 the minimum supported
-	// 	// version in the TLS config for your server, then all browsers able to
-	// 	// use your application will support SameSite cookies
-	// 	MinVersion:       tls.VersionTLS13,
-	// 	CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
-	// }
-	log.Printf("Configuring server for %s...", env)
+	infoLog.Printf("Configuring server for %s...", env)
 	srv := &http.Server{
 		Addr:      cfg.Addr,
 		ErrorLog:  errorLog,
@@ -124,18 +120,20 @@ func main() {
 
 	switch env {
 	case Development:
-		err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
-		errorLog.Fatal(err)
+		// Get self-signed certificates
+		cert := os.Getenv("CERT_PEM")
+		key := os.Getenv("KEY_PEM")
+		// ListenAndServeTLS() starts HTTPS server
+		err = srv.ListenAndServeTLS(cert, key)
 	case Production:
+		// ListenAndServe() starts HTTP server, security is handled by Render.com
 		err = srv.ListenAndServe()
-		errorLog.Fatal(err)
 	}
 
-	// ListenAndServeTLS() starts HTTPS server
-	// err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
-	// err = srv.ListenAndServe()
-	// in case of errors log and exit
-	// errorLog.Fatal(err)
+	// In case of errors log and exit
+	if err != nil {
+		errorLog.Fatal(err)
+	}
 }
 
 // The openDB() function wraps sql.Open() and returns a sql.DB connection pool for a given dsn
