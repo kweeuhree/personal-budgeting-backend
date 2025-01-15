@@ -51,8 +51,12 @@ func main() {
 		env = Development
 	}
 
+	// error and info logs
+	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
 	// Load the configuration
-	cfg, err := config.Load(env)
+	cfg, err := config.Load(env, errorLog)
 	if err != nil {
 		log.Fatalf("Error loading configuration: %v", err)
 	}
@@ -71,10 +75,6 @@ func main() {
 		log.Fatalf("Database connection failed: %v", err)
 	}
 	defer db.Close()
-
-	// error and info logs
-	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
-	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
 	// Create a new MySQL session store using the connection pool.
 	store := mysqlstore.New(db)
