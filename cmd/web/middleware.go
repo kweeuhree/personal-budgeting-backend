@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -12,23 +10,22 @@ import (
 	// environment variables
 
 	// double submit cookies
+	"github.com/joho/godotenv"
 	"github.com/justinas/nosurf"
 )
 
 func secureHeaders(next http.Handler) http.Handler {
-
-	// Load environment variables from the .env file
-	// err := godotenv.Load()
-	// if err != nil {
-	// 	log.Fatalf("Error loading .env file: %v", err)
-	// }
-
 	reactAddress := os.Getenv("REACT_ADDRESS")
-
+	if reactAddress == "" {
+		// Load environment variables
+		err := godotenv.Load()
+		if err != nil {
+			log.Printf("Error loading .env file: %v", err)
+		}
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logRequestBody(r)
-		// Handle OPTIONS requests for CORS preflight
 
+		// Handle OPTIONS requests for CORS preflight
 		if r.Method == http.MethodOptions {
 
 			log.Println("Handling OPTIONS request for CORS preflight")
@@ -40,7 +37,6 @@ func secureHeaders(next http.Handler) http.Handler {
 			log.Println("Preflight CORS response sent with status 200 OK")
 			return
 		}
-		log.Println("Setting CORS headers for non-OPTIONS request")
 		// Specify origin
 		w.Header().Set("Access-Control-Allow-Origin", reactAddress)
 
@@ -61,14 +57,12 @@ func secureHeaders(next http.Handler) http.Handler {
 }
 
 func (app *application) requireAuthentication(next http.Handler) http.Handler {
-	log.Println("requireAuthentication handler...")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("requireAuthentication middleware triggered for", r.URL.Path)
 		// if the user is not authenticated, redirect them to the login page and
 		// return from the middleware chain so that no subsequent handlers in
 		// the chain are executed.
 		if !app.isAuthenticated(r) {
-			log.Println("Authenticated request blocked.")
+			app.errorLog.Println("Authenticated request blocked.")
 			response := map[string]string{
 				"status":  "401 Unauthorized",
 				"message": "You must be logged in to access this resource",
@@ -80,16 +74,14 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 		// require authentication are not stored in the users browser cache
 		// (or other intermediary cache).
 		w.Header().Add("Cache-Control", "no-store")
-		log.Println("Authenticated request proceeding.")
+		app.infoLog.Println("Authenticated request proceeding.")
 		// And call the next handler in the chain.
 		next.ServeHTTP(w, r)
 	})
 }
 
 func (app *application) authenticate(next http.Handler) http.Handler {
-	log.Println("authenticate handler...")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("authenticate middleware triggered for", r.URL.Path)
 		// Retrieve the authenticatedUserId value from the session
 		id := app.sessionManager.GetString(r.Context(), "authenticatedUserID")
 
@@ -127,12 +119,19 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 // Create a NoSurf middleware function which uses a customized CSRF cookie
 // with the Secure, Path and HttpOnly attributes set.
 func noSurf(next http.Handler) http.Handler {
+	var sameSite http.SameSite
+	if os.Getenv("ENV") == "production" {
+		sameSite = http.SameSiteNoneMode
+	} else {
+		sameSite = http.SameSiteLaxMode
+	}
+
 	csrfHandler := nosurf.New(next)
 	csrfHandler.SetBaseCookie(http.Cookie{
 		HttpOnly: true,
 		Path:     "/",
 		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: sameSite,
 	})
 	return csrfHandler
 }
@@ -143,7 +142,7 @@ func (app *application) CSRFToken(w http.ResponseWriter, r *http.Request) {
 	if token == "" {
 		app.errorLog.Println("CSRF token is empty")
 	} else {
-		app.infoLog.Println("CSRF token generated:", token)
+		app.infoLog.Println("CSRF token generated")
 	}
 
 	err := encodeJSON(w, http.StatusOK, map[string]string{"csrf_token": token})
@@ -194,27 +193,4 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 		}()
 		next.ServeHTTP(w, r)
 	})
-}
-
-func logRequestBody(r *http.Request) {
-	if r.Body == nil {
-		log.Println("Request body is empty")
-		return
-	}
-
-	log.Println("Method:", r.Method)
-	log.Println("Headers:", r.Header)
-
-	// Read the body
-	bodyBytes, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading request body: %v", err)
-		return
-	}
-
-	// Log the body content
-	log.Printf("Received request body: %s", string(bodyBytes))
-
-	// Reset the body for further processing
-	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 }

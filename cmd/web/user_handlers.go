@@ -90,9 +90,6 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 
 // authenticate and login the user
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
-	log.Println("userLogin")
-	fmt.Println("Attempting to authenticate and login the user...")
-
 	// Decode the form data into the userLoginInput struct
 	var form UserLoginInput
 	if err := decodeJSON(w, r, &form); err != nil {
@@ -100,7 +97,7 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Attempting to authenticate user: %s", form)
+	log.Printf("Attempting to authenticate user: %s", form.Email)
 
 	// Validate input
 	form.Validate()
@@ -176,8 +173,6 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, err)
 		return
 	}
-
-	fmt.Printf("Authenticated and logged user with ID %s", id)
 }
 
 // view specific user
