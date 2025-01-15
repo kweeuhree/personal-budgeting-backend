@@ -15,15 +15,14 @@ import (
 )
 
 func secureHeaders(next http.Handler) http.Handler {
-
-	// Load environment variables
-	err := godotenv.Load()
-	if err != nil {
-		log.Printf("Error loading .env file: %v", err)
-	}
-
 	reactAddress := os.Getenv("REACT_ADDRESS")
-
+	if reactAddress == "" {
+		// Load environment variables
+		err := godotenv.Load()
+		if err != nil {
+			log.Printf("Error loading .env file: %v", err)
+		}
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// Handle OPTIONS requests for CORS preflight
