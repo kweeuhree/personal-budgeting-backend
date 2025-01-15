@@ -10,7 +10,6 @@ import (
 )
 
 func (app *application) routes() http.Handler {
-	log.Println("Routing...")
 	// Initialize the router.
 	router := httprouter.New()
 	// Serve static files
@@ -72,7 +71,6 @@ func (app *application) routes() http.Handler {
 
 	// protected application routes, which uses requireAuthentication middleware
 	protected := dynamic.Append(app.requireAuthentication)
-	log.Println("Setting up protected routes...")
 
 	// protected user routes
 	router.Handler(http.MethodGet, "/api/users/view/:userId", protected.ThenFunc(app.viewSpecificUser))
