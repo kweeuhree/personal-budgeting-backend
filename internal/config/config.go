@@ -13,6 +13,7 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -21,6 +22,14 @@ type Config struct {
 	TLSConfig      *tls.Config
 	DebugPprof     bool
 	SessionManager *scs.SessionManager
+}
+
+// if you were to make TLS 1.3 the minimum supported
+// version in the TLS config for your server, then all browsers able to
+// use your application will support SameSite cookies
+var tlsConfig = &tls.Config{
+	MinVersion:       tls.VersionTLS13,
+	CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
 }
 
 // Load() loads the configuration based on the provided environment.
@@ -41,13 +50,18 @@ func devConfig() *Config {
 	addr := flag.String("addr", ":4000", "HTTP network address")
 	flag.Parse()
 
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 
 	DSNstringVars := []any{dbUser, dbPassword, dbName}
 	for indx, value := range DSNstringVars {
-		if value == nil {
+		if value == "" {
 			fmt.Printf("%s at index %d is nil", value, indx)
 		}
 	}
@@ -60,15 +74,6 @@ func devConfig() *Config {
 	sessionManager := scs.New()
 	// Use the MySQL session store with the session manager.
 	sessionManager.Lifetime = 12 * time.Hour
-
-	// assembly implementations are used.
-	tlsConfig := &tls.Config{
-		// if you were to make TLS 1.3 the minimum supported
-		// version in the TLS config for your server, then all browsers able to
-		// use your application will support SameSite cookies
-		MinVersion:       tls.VersionTLS13,
-		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
-	}
 
 	return &Config{
 		Addr:           *addr, // Development default port
@@ -130,15 +135,6 @@ func prodConfig() (*Config, error) {
 	sessionManager.Cookie.Secure = true
 	sessionManager.Cookie.SameSite = http.SameSiteNoneMode
 	sessionManager.Cookie.Path = "/"
-
-	// assembly implementations are used.
-	tlsConfig := &tls.Config{
-		// if you were to make TLS 1.3 the minimum supported
-		// version in the TLS config for your server, then all browsers able to
-		// use your application will support SameSite cookies
-		MinVersion:       tls.VersionTLS13,
-		CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
-	}
 
 	return &Config{
 		Addr:           fmt.Sprintf(":%s", dbPort),

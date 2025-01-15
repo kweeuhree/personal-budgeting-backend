@@ -8,8 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
-
 	"kweeuhree.personal-budgeting-backend/internal/config"
 	"kweeuhree.personal-budgeting-backend/internal/models"
 
@@ -39,14 +37,19 @@ type application struct {
 	sessionManager  *scs.SessionManager
 }
 
-func main() {
-	// Load environment variables from the .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
+const (
+	Production  = "production"
+	Development = "development"
+)
 
-	env := os.Getenv("ENV")
+func main() {
+	// This will be populated by Render.com
+	var env string
+	env = os.Getenv("ENV")
+	// If env was not populated, set it to development
+	if env != Production {
+		env = Development
+	}
 
 	// Load the configuration
 	cfg, err := config.Load(env)
@@ -120,10 +123,10 @@ func main() {
 	infoLog.Printf("Starting server on %s", cfg.Addr)
 
 	switch env {
-	case "development":
+	case Development:
 		err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 		errorLog.Fatal(err)
-	case "production":
+	case Production:
 		err = srv.ListenAndServe()
 		errorLog.Fatal(err)
 	}
