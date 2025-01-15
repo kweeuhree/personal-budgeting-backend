@@ -1,7 +1,11 @@
 package main
 
 import (
+	// The driver’s init() function must be run so that it can register itself with the
+	// database/sql package. To ensure this, we use the blank identifier to import
+	// the package. This is a common pattern in Go for initializing SQL drivers.
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
@@ -11,23 +15,15 @@ import (
 	"kweeuhree.personal-budgeting-backend/internal/config"
 	"kweeuhree.personal-budgeting-backend/internal/models"
 
-	// models
-
-	// environment variables
-
-	// we need the driver’s init() function to run so that it can register itself with the
-	// database/sql package. The trick to getting around this is to alias the package name
-	// to the blank identifier. This is standard practice for most of Go’s SQL drivers
+	// Load environment variables for development
+	"github.com/joho/godotenv"
 
 	"github.com/alexedwards/scs/mysqlstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/joho/godotenv"
 )
 
-// with underscore
-
 // Define an application struct to hold the application-wide dependencies for
-// the web application.
+// the web application
 type application struct {
 	errorLog        *log.Logger
 	infoLog         *log.Logger
@@ -45,8 +41,7 @@ const (
 
 func main() {
 	// This will be populated by Render.com
-	var env string
-	env = os.Getenv("ENV")
+	env := os.Getenv("ENV")
 	// If env was not populated, set it to development
 	if env != Production {
 		err := godotenv.Load()
@@ -71,7 +66,7 @@ func main() {
 	if cfg.DebugPprof {
 		go func() {
 			ppofLog.Println("debugging enabled on /debug/pprof")
-			ppofLog.Println(http.ListenAndServe("localhost:4000", nil))
+			ppofLog.Println(http.ListenAndServe(fmt.Sprintf("localhost%s", cfg.Addr), nil))
 		}()
 	}
 

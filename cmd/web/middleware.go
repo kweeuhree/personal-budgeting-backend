@@ -6,10 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	// environment variables
-
 	// double submit cookies
-
 	"github.com/justinas/nosurf"
 )
 

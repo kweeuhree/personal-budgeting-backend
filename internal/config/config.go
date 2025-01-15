@@ -13,7 +13,6 @@ import (
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -52,28 +51,22 @@ func Load(env string, errorLog *log.Logger) (*Config, error) {
 }
 
 func devConfig(errorLog *log.Logger) *Config {
-	// Local MySQL instance
-	addr := flag.String("addr", ":4000", "HTTP network address")
-	flag.Parse()
-
-	err := godotenv.Load()
-	if err != nil {
-		errorLog.Fatalf("error loading .env file: %v", err)
-	}
-
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
+	port := os.Getenv("PORT")
 
-	DSNstringVars := []any{dbUser, dbPassword, dbName}
-	if len(DSNstringVars) < 3 {
+	envVars := []any{dbUser, dbPassword, dbName}
+	if len(envVars) < 3 {
 		errorLog.Fatalf("failed to load environment variables")
 	}
 
+	// Local MySQL instance
 	// Define new command-line flag for the mysql dsn string
-	DSNstring := fmt.Sprintf("%s:%s@/%s?parseTime=true", DSNstringVars...)
+	DSNstring := fmt.Sprintf("%s:%s@/%s?parseTime=true", envVars...)
 	dsn := flag.String("dsn", DSNstring, "MySQL data source name")
-
+	addr := flag.String("addr", port, "HTTP network address")
+	flag.Parse()
 	// Session manager configuration
 	sessionManager := scs.New()
 	// Use the MySQL session store with the session manager.
@@ -99,8 +92,8 @@ func prodConfig(errorLog *log.Logger) *Config {
 
 	caAivenCert := os.Getenv("CA_AIVEN_CERT")
 
-	prodVars := []any{dbUser, dbPassword, dbName, dbPort, dbName, caAivenCert}
-	if len(prodVars) < 6 {
+	envVars := []any{dbUser, dbPassword, dbName, dbPort, dbName, caAivenCert}
+	if len(envVars) < 6 {
 		errorLog.Fatalf("failed to load environment variables")
 	}
 
