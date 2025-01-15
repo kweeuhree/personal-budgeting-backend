@@ -29,6 +29,8 @@ The application can be interacted with through the deployed [React application](
 
 ## 💡API Specification
 
+See a [Redocly page](https://kweeuhree.github.io/personal-budgeting-backend/) for an interactive overview.
+
 ### Endpoint: CSRF Token
 
 - Path: `/api/csrf-token`
