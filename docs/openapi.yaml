@@ -28,6 +28,270 @@ paths:
                     example: 7cpnevxmIFjaS0yr6msraJistWmqySe/6JPE2ELapCtRyJ+Eg/iZ75ErPoRecEADW5q6jYMzMZjx83RKz+tFIg==
         400:
           $ref: "#/components/responses/ServerError"
+  /api/users/signup:
+    post:
+      summary: Register a new user
+      description: Creates a new user account with an email, display name, and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                displayName:
+                  type: string
+                  example: "Jane Doe"
+                password:
+                  type: string
+                  format: password
+                  example: "securePassword123"
+              required:
+                - email
+                - displayName
+                - password
+      responses:
+        200:
+          description: User registered successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    example: "7fb1377b-b223-49d9-a31a-5a02701dd310"
+                  email:
+                    type: string
+                    example: "user@example.com"
+                  flash:
+                    type: string
+                    example: "Your signup was successful. Please log in."
+        400:
+          description: Invalid input data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid request payload"
+                  fieldErrors:
+                    type: object
+                    additionalProperties:
+                      type: string
+        409:
+          description: Email already in use.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Email already in use"
+                  field:
+                    type: string
+                    example: "email"
+        500:
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error"
+  /api/users/login:
+    post:
+      summary: Authenticate and log in a user
+      description: Authenticates a user using email and password, then returns session details and budget information if available.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "securePassword123"
+              required:
+                - email
+                - password
+      responses:
+        200:
+          description: User authenticated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: string
+                    example: "7fb1377b-b223-49d9-a31a-5a02701dd310"
+                  email:
+                    type: string
+                    example: "user@example.com"
+                  displayName:
+                    type: string
+                    example: "Jane Doe"
+                  budget:
+                    type: object
+                    nullable: true
+                    properties:
+                      budgetId:
+                        type: string
+                        example: "7fb1377b-b223-49d9-a31a-5a02701dd310"
+                      checkingBalance:
+                        type: number
+                        example: 1500.75
+                      savingsBalance:
+                        type: number
+                        example: 5000.50
+                      budgetTotal:
+                        type: number
+                        example: 10000.00
+                      budgetRemaining:
+                        type: number
+                        example: 4500.25
+                      totalSpent:
+                        type: number
+                        example: 5500.75
+                  flash:
+                    type: string
+                    example: "Login successful!"
+        400:
+          description: Invalid input data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid request payload"
+                  fieldErrors:
+                    type: object
+                    additionalProperties:
+                      type: string
+        401:
+          description: Incorrect email or password.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Email or password is incorrect"
+        500:
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error"
+  /api/users/logout:
+    post:
+      summary: Log out a user
+      description: Ends the user's session and removes authentication data.
+      responses:
+        200:
+          description: User logged out successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  flash:
+                    type: string
+                    example: "You've been logged out successfully!"
+        500:
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error"
+  /api/budget/{budgetId}/view:
+    get:
+      summary: Retrieve budget details
+      description: Fetches budget information for a given budget ID.
+      parameters:
+        - name: budgetId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The ID of the budget to retrieve.
+      responses:
+        200:
+          description: Budget details retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  budgetId:
+                    type: string
+                    example: "7fb1377b-b223-49d9-a31a-5a02701dd310"
+                  checkingBalance:
+                    type: number
+                    example: 1500.75
+                  savingsBalance:
+                    type: number
+                    example: 5000.50
+                  budgetTotal:
+                    type: number
+                    example: 10000.00
+                  budgetRemaining:
+                    type: number
+                    example: 4500.25
+                  totalSpent:
+                    type: number
+                    example: 5500.75
+                  updatedAt:
+                    type: string
+                    format: date-time
+                    example: "2025-02-06T15:04:05Z"
+        404:
+          description: Budget not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Budget not found"
+        500:
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error"
 
 components:
   responses:
