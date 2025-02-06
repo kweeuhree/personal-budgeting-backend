@@ -292,7 +292,365 @@ paths:
                   error:
                     type: string
                     example: "Internal server error"
+  /api/budget/create:
+    post:
+      summary: Create a new budget
+      description: Allows an authenticated user to create a new budget with checking and savings balances.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                checkingBalance:
+                  type: integer
+                  example: 5000
+                savingsBalance:
+                  type: integer
+                  example: 10000
+              required:
+                - checkingBalance
+                - savingsBalance
+      responses:
+        201:
+          description: Budget created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  budgetId:
+                    type: string
+                    example: "550e8400-e29b-41d4-a716-446655440000"
+                  checkingBalance:
+                    type: integer
+                    example: 5000
+                  savingsBalance:
+                    type: integer
+                    example: 10000
+                  budgetTotal:
+                    type: integer
+                    example: 15000
+                  flash:
+                    type: string
+                    example: "Budget has been created."
+        400:
+          description: Invalid input data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: object
+                    example:
+                      checkingBalance: "Checking balance must be a positive number."
+                      savingsBalance: "Savings balance must be a positive number."
+        500:
+          description: Server error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Internal server error."
+ /api/budget/update/{budgetId}:
+    put:
+      summary: Update a user's budget
+      description: This endpoint allows a user to update a specific budget by providing the update type (add or subtract) and the amount to update. It also ensures validation of the current budget and the provided inputs.
+      requestBody:
+        description: The budget update details.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                UpdateType:
+                  type: string
+                  enum: [Add, Subtract]
+                  description: The type of update to perform (add or subtract).
+                BalanceType:
+                  type: string
+                  enum: [Checking, Savings]
+                  description: The type of balance to update.
+                UpdateSumInCents:
+                  type: integer
+                  description: The amount to update, in cents.
+              required:
+                - UpdateType
+                - BalanceType
+                - UpdateSumInCents
+      responses:
+        200:
+          description: Successful budget update.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  BudgetId:
+                    type: string
+                    description: The ID of the updated budget.
+                  CheckingBalance:
+                    type: integer
+                    description: The updated checking balance in cents.
+                  SavingsBalance:
+                    type: integer
+                    description: The updated savings balance in cents.
+                  BudgetTotal:
+                    type: integer
+                    description: The total budget amount in cents.
+                  BudgetRemaining:
+                    type: integer
+                    description: The remaining budget amount in cents.
+                  TotalSpent:
+                    type: integer
+                    description: The total amount spent in cents.
+                  UpdatedAt:
+                    type: string
+                    format: date-time
+                    description: The timestamp of when the budget was last updated.
+                  Flash:
+                    type: string
+                    description: Flash message indicating the update status.
+        400:
+          description: Invalid input or failed validation.
+        404:
+          description: Budget not found.
+        500:
+          description: Internal server error.
 
+  /api/budget/delete/{budgetId}:
+      delete:
+        summary: Delete a user's budget
+        description: This endpoint allows a user to delete a specific budget, along with all related expenses and voids the total sums of the existing expense categories.
+        parameters:
+          - in: path
+            name: budgetId
+            required: true
+            description: The ID of the budget to delete.
+            schema:
+              type: string
+        responses:
+          200:
+            description: Budget successfully deleted.
+            content:
+              application/json:
+                schema:
+                  type: string
+                  example: "Deleted successfully!"
+          400:
+            description: Invalid request, such as a missing or incorrect `budgetId`.
+          404:
+            description: The specified budget was not found.
+          500:
+            description: Internal server error.
+
+openapi: 3.0.0
+info:
+  title: Expense Management API
+  description: API for viewing all user expenses.
+  version: 1.0.0
+paths:
+  /api/expenses/view:
+    get:
+      summary: Get all user expenses
+      description: This endpoint retrieves all expenses for the authenticated user.
+      responses:
+        200:
+          description: Successfully retrieved expenses.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    ExpenseId:
+                      type: string
+                      description: The unique identifier for the expense.
+                    CategoryId:
+                      type: string
+                      description: The ID of the category to which the expense belongs.
+                    AmountInCents:
+                      type: integer
+                      description: The amount of the expense in cents.
+                    Description:
+                      type: string
+                      description: A description of the expense.
+                    ExpenseType:
+                      type: string
+                    CreatedAt:
+                      type: string
+                      format: date-time
+                      description: The timestamp when the expense was created.
+        401:
+          description: Unauthorized access due to missing or invalid authentication token.
+        500:
+          description: Internal server error.
+
+  /api/expenses/create:
+      post:
+        summary: Create a new expense
+        description: This endpoint allows a user to create a new expense by providing the category, description, type, and amount of the expense. The system will also update the budget and category expenses accordingly.
+        requestBody:
+          description: The details of the new expense to be created.
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  CategoryId:
+                    type: string
+                    description: The ID of the category to which the expense belongs.
+                  AmountInCents:
+                    type: integer
+                    description: The amount of the expense in cents.
+                  Description:
+                    type: string
+                    description: A description of the expense.
+                  ExpenseType:
+                    type: string
+                    description: The type of expense.
+                required:
+                  - CategoryId
+                  - AmountInCents
+                  - Description
+                  - ExpenseType
+        responses:
+          201:
+            description: Successfully created the expense.
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    ExpenseId:
+                      type: string
+                      description: The unique identifier for the newly created expense.
+                    CategoryId:
+                      type: string
+                      description: The ID of the category to which the expense belongs.
+                    AmountInCents:
+                      type: integer
+                      description: The amount of the expense in cents.
+                    Description:
+                      type: string
+                      description: A description of the expense.
+                    ExpenseType:
+                      type: string
+                      description: The type of expense.
+                    Flash:
+                      type: string
+                      description: Flash message indicating the status of the expense creation.
+          400:
+            description: Invalid input or failed validation.
+          401:
+            description: Unauthorized access due to missing or invalid authentication token.
+          500:
+            description: Internal server error.
+
+  /api/expenses/update/{expenseId}:
+    put:
+      summary: Update an existing expense
+      description: This endpoint allows a user to update an existing expense by providing the expense ID and the new details (category, description, amount, and type).
+      parameters:
+        - in: path
+          name: expenseId
+          required: true
+          description: The ID of the expense to update.
+          schema:
+            type: string
+      requestBody:
+        description: The updated details of the expense.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                CategoryId:
+                  type: string
+                  description: The ID of the category to which the expense belongs.
+                AmountInCents:
+                  type: integer
+                  description: The updated amount of the expense in cents.
+                Description:
+                  type: string
+                  description: A description of the expense.
+                ExpenseType:
+                  type: string
+                  description: The type of expense.
+              required:
+                - CategoryId
+                - AmountInCents
+                - Description
+                - ExpenseType
+      responses:
+        200:
+          description: Successfully updated the expense.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ExpenseId:
+                    type: string
+                    description: The ID of the updated expense.
+                  CategoryId:
+                    type: string
+                    description: The ID of the category to which the expense belongs.
+                  AmountInCents:
+                    type: integer
+                    description: The updated amount of the expense in cents.
+                  Description:
+                    type: string
+                    description: A description of the expense.
+                  ExpenseType:
+                    type: string
+                    description: The type of expense.
+                  Flash:
+                    type: string
+                    description: Flash message indicating the status of the expense update.
+        400:
+          description: Invalid input or failed validation.
+        401:
+          description: Unauthorized access due to missing or invalid authentication token.
+        404:
+          description: The specified expense was not found.
+        500:
+          description: Internal server error.
+
+  /api/expenses/delete/{expenseId}:
+    delete:
+      summary: Delete an expense
+      description: This endpoint allows a user to delete an existing expense by providing the expense ID. The expense is removed, and the budget and category expenses are updated accordingly.
+      parameters:
+        - in: path
+          name: expenseId
+          required: true
+          description: The ID of the expense to delete.
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successfully deleted the expense.
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "Deleted successfully!"
+        401:
+          description: Unauthorized access due to missing or invalid authentication token.
+        404:
+          description: The specified expense was not found.
+        500:
+          description: Internal server error.
 components:
   responses:
     ServerError:
@@ -305,6 +663,109 @@ components:
               error:
                 type: string
                 example: "An error occurred while processing the request."
+
+  /api/categories/view:
+    get:
+      summary: View all categories
+      description: This endpoint allows a user to view all of their expense categories, including category names, descriptions, and total sums.
+      responses:
+        200:
+          description: Successfully retrieved all expense categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    ExpenseCategoryId:
+                      type: string
+                      description: The unique identifier of the expense category.
+                    Name:
+                      type: string
+                      description: The name of the category.
+                    Description:
+                      type: string
+                      description: A description of the category.
+                    TotalSum:
+                      type: integer
+                      description: The total sum of expenses in this category.
+        401:
+          description: Unauthorized access due to missing or invalid authentication token.
+        500:
+          description: Internal server error.
+  /api/categories/create:
+    post:
+      summary: Create a new category
+      description: This endpoint allows a user to create a new expense category with a name, description, and an initial total sum of 0.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Name:
+                  type: string
+                  description: The name of the new expense category.
+                Description:
+                  type: string
+                  description: A description of the new category.
+              required:
+                - Name
+                - Description
+      responses:
+        201:
+          description: Successfully created a new expense category.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ExpenseCategoryId:
+                    type: string
+                    description: The unique identifier of the newly created expense category.
+                  Name:
+                    type: string
+                    description: The name of the new category.
+                  Description:
+                    type: string
+                    description: A description of the new category.
+                  TotalSum:
+                    type: integer
+                    description: The total sum of expenses in the category (initially 0).
+                  Flash:
+                    type: string
+                    description: A flash message indicating the category creation success.
+        400:
+          description: Bad request due to invalid input data.
+        401:
+          description: Unauthorized access due to missing or invalid authentication token.
+        500:
+          description: Internal server error.
+
+  /api/categories/delete/{categoryId}:
+    delete:
+      summary: Delete an expense category
+      description: This endpoint allows a user to delete an expense category and all expenses associated with it.
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          description: The unique identifier of the expense category to delete.
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successfully deleted the expense category and all related expenses.
+        400:
+          description: Bad request if the categoryId is invalid.
+        401:
+          description: Unauthorized access due to missing or invalid authentication token.
+        404:
+          description: The specified category was not found.
+        500:
+          description: Internal server error.
 
 servers:
   - url: https://personal-budgeting-backend.onrender.com
